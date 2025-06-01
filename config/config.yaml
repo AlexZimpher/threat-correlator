@@ -1,5 +1,5 @@
 abuseipdb:
-  api_key: "your_api_key_here"
+  api_key: "d88cc41fb3bb42b3731ac82716787e3b533035fb43bad34eedcd7f005f312e828eea102906433b99"
   endpoint: "https://api.abuseipdb.com/api/v2/blacklist"
   max_age_in_days: 30
   confidence_threshold: 75
