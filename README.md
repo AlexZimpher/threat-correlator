@@ -98,6 +98,44 @@ poetry run pytest
 
 ---
 
+## ⚙️ Configuration
+
+ThreatCorrelator requires a configuration file to connect to AbuseIPDB and define severity thresholds.
+
+1. **Create your config file**:
+
+   ```bash
+   cp config/config.example.yaml config/config.yaml
+   ```
+
+2. **Edit `config/config.yaml`** to include your AbuseIPDB API key:
+
+   ```yaml
+   abuseipdb:
+     api_key: "your_api_key_here"  # 🔐 Replace with your actual key
+     endpoint: "https://api.abuseipdb.com/api/v2/blacklist"
+     confidence_threshold: 75
+     max_age_in_days: 30
+     limit: 10000
+
+   severity_thresholds:
+     high: 80
+     medium: 50
+   ```
+
+> 💡 Your actual API key should **never be committed to Git**. The `config.yaml` file is ignored via `.gitignore`.
+
+3. **Severity levels** are used to classify IP threats:
+
+   * `High`: Confidence ≥ 80
+   * `Medium`: Confidence ≥ 50
+   * `Low`: Confidence < 50
+     You can adjust these thresholds in the config file.
+
+---
+
+---
+
 ## 🐳 Optional Docker (Coming Soon)
 
 ---

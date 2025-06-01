@@ -39,3 +39,6 @@ Thumbs.db
 docker-compose.yml
 .Dockerfile
 
+# Data
+data/iocs.db
+.gitignore
