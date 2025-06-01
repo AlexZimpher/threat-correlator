@@ -2,7 +2,7 @@
 
 **ThreatCorrelator** is a modular threat intelligence tool that fetches high-confidence malicious IP addresses from AbuseIPDB, stores them in a local SQLite database, and scans your log files for known threats. It provides both a powerful CLI and an interactive Streamlit dashboard to visualize and export findings.
 
-![CI](https://github.com/yourusername/threatcorrelator/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/AlexZimpher/threatcorrelator/actions/workflows/ci.yml/badge.svg)
 
 ---
 
