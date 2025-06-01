@@ -1,108 +1,36 @@
-Here is the complete, copiable `README.md`:
-
-````markdown
 # 🔐 ThreatCorrelator
 
-**ThreatCorrelator** is a modular threat intelligence tool that fetches known malicious IP addresses from AbuseIPDB, stores them locally, and scans your log files for matches. It includes a powerful CLI and an interactive Streamlit dashboard to visualize findings.
+**ThreatCorrelator** is a modular threat intelligence tool that fetches high-confidence malicious IP addresses from AbuseIPDB, stores them in a local SQLite database, and scans your log files for known threats. It provides both a powerful CLI and an interactive Streamlit dashboard to visualize and export findings.
+
+![CI](https://github.com/yourusername/threatcorrelator/actions/workflows/ci.yml/badge.svg)
 
 ---
 
 ## 📌 Features
 
-- ✅ Fetch high-confidence IOCs from [AbuseIPDB](https://www.abuseipdb.com/)
-- ✅ Store and manage threat data in a local SQLite database
-- ✅ Scan log files and classify threat severity
-- ✅ Visualize IOCs and scan results via Streamlit dashboard
-- ✅ Export data to CSV for offline review
+- ✅ Fetch IOCs from [AbuseIPDB](https://www.abuseipdb.com/)
+- ✅ Store threat intelligence locally via SQLAlchemy
+- ✅ Scan JSON log files for matching IPs
+- ✅ Classify threat severity (High / Medium / Low)
+- ✅ Visualize and interact via a Streamlit dashboard
+- ✅ Export threat matches to CSV or JSON
+- ✅ Clean modular code with full test coverage and CI
 
 ---
 
 ## 🚀 Installation
 
 ```bash
-git clone https://github.com/yourusername/ThreatCorrelator.git
-cd ThreatCorrelator
+git clone https://github.com/yourusername/threatcorrelator.git
+cd threatcorrelator
 poetry install
-````
-
-Create a `config/config.yaml` file with your AbuseIPDB API key:
-
-```yaml
-abuseipdb:
-  api_key: "your_api_key_here"
-  endpoint: "https://api.abuseipdb.com/api/v2/blacklist"
-  max_age_in_days: 30
-  confidence_threshold: 75
-```
-
----
-
-## 🛠️ CLI Usage
-
-```bash
-poetry run threatcorrelator fetch         # Fetch and store IOCs
-poetry run threatcorrelator correlate logs/example.log   # Scan log for threats
-poetry run threatcorrelator export iocs.csv              # Export to CSV
-```
-
----
-
-## 📊 Dashboard
-
-Launch the Streamlit dashboard:
-
-```bash
-poetry run streamlit run src/threatcorrelator/dashboard.py
-```
-
-* View IOC stats
-* Upload logs to scan interactively
-* Visualize severity and source distribution
-
----
-
-## 📂 Project Structure
-
-```
-threatcorrelator/
-├── config/                 # Configuration (YAML)
-├── src/threatcorrelator/  # Core modules
-├── tests/                 # Unit tests
-├── threats.db             # SQLite database (auto-generated)
-├── pyproject.toml         # Poetry config
-```
-
----
-
-## 📦 Export Example
-
-```bash
-poetry run threatcorrelator export output/iocs.csv
-```
-
-Produces:
-
-```csv
-ip,confidence,last_reported
-203.0.113.45,98,2025-05-31T13:05:00Z
-...
-```
-
----
-
-## 🧪 Testing
-
-```bash
-poetry run pytest
 ```
 
 ---
 
 ## ⚙️ Configuration
 
-ThreatCorrelator requires a configuration file to connect to AbuseIPDB and define severity thresholds.
-
-1. **Create your config file**:
+1. **Copy the example config file:**
 
    ```bash
    cp config/config.example.yaml config/config.yaml
@@ -123,41 +51,103 @@ ThreatCorrelator requires a configuration file to connect to AbuseIPDB and defin
      medium: 50
    ```
 
-> 💡 Your actual API key should **never be committed to Git**. The `config.yaml` file is ignored via `.gitignore`.
-
-3. **Severity levels** are used to classify IP threats:
-
-   * `High`: Confidence ≥ 80
-   * `Medium`: Confidence ≥ 50
-   * `Low`: Confidence < 50
-     You can adjust these thresholds in the config file.
+> ⚠️ Your `config.yaml` and `data/iocs.db` are ignored via `.gitignore` for security.
 
 ---
 
+## 🛠️ CLI Usage
+
+```bash
+poetry run threatcorrelator fetch                 # Fetch & store IOCs from AbuseIPDB
+poetry run threatcorrelator correlate logs/example.json   # Scan logs against IOCs
+poetry run threatcorrelator export output/results.csv     # Export results
+poetry run threatcorrelator show-config           # Show active configuration
+```
+
 ---
 
-## 🐳 Optional Docker (Coming Soon)
+## 📊 Streamlit Dashboard
+
+Launch the dashboard to interact visually:
+
+```bash
+poetry run streamlit run src/threatcorrelator/dashboard.py
+```
+
+- View IOC stats
+- Upload log files
+- Visualize threat severity & country breakdown
+- Export results interactively
 
 ---
 
-## 📸 Screenshots
+## 📦 Export Example
 
-> *(Add screenshots of CLI and dashboard here.)*
+```bash
+poetry run threatcorrelator export logs/test.json -o output/threats.csv
+```
+
+Outputs:
+
+```csv
+ip,confidence,country,last_seen,usage,severity
+1.2.3.4,85,US,2025-05-31T13:05:00,ISP,High
+...
+```
+
+---
+
+## 📂 Project Structure
+
+```
+threatcorrelator/
+├── config/                 # YAML configuration
+├── src/threatcorrelator/  # Main source code
+│   ├── fetch.py           # AbuseIPDB fetch logic
+│   ├── correlate.py       # Log correlation logic
+│   ├── storage.py         # ORM & DB
+│   ├── cli.py             # CLI entrypoint
+│   └── dashboard.py       # Streamlit dashboard (optional)
+├── tests/                 # Unit tests
+├── pyproject.toml         # Poetry configuration
+└── .github/workflows/     # GitHub Actions CI
+```
+
+---
+
+## 🧪 Testing
+
+```bash
+poetry run pytest
+```
+
+- `tests/test_correlator.py`: severity classification logic
+- `tests/test_correlate_logs.py`: log scan integration
+- `tests/test_fetch.py`: AbuseIPDB mock API tests
+
+---
+
+## 🐳 Docker Support *(Coming Soon)*
+
+---
+
+## 📸 Screenshots *(to add)*
+
+> Add:
+> - 📷 CLI screenshot
+> - 📷 Dashboard showing scan results & charts
 
 ---
 
 ## 📝 License
 
-[MIT](LICENSE)
+[MIT License](LICENSE)
 
 ---
 
 ## 👤 Author
 
-Alexander Zimpher
-Cybersecurity Student @ WWU
-[https://github.com/yourusername](https://github.com/yourusername)
-
-```
-```
+**Alexander Zimpher**  
+Cybersecurity Student @ WWU  
+[https://github.com/AlexZimpher](https://github.com/AlexZimpher)
 
