@@ -1,21 +1,28 @@
 [project]
 name = "threatcorrelator"
 version = "0.1.0"
-description = ""
+description = "A modular threat intelligence tool for fetching and correlating IOCs"
 authors = [
-    {name = "Alexander Zimpher",email = "alexanderzimpher@gmail.com"}
+    { name = "Alexander Zimpher", email = "alexanderzimpher@gmail.com" }
 ]
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "click (>=8.2.1,<9.0.0)",
-    "requests (>=2.32.3,<3.0.0)",
-    "pyyaml (>=6.0.2,<7.0.0)"
+    "click>=8.2.1,<9.0.0",
+    "requests>=2.32.3,<3.0.0",
+    "pyyaml>=6.0.2,<7.0.0",
+    "sqlalchemy>=2.0.0,<3.0.0"
 ]
 
-[tool.poetry]
-packages = [{include = "threatcorrelator", from = "src"}]
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
 
+[tool.poetry]
+packages = [{ include = "threatcorrelator", from = "src" }]
+
+[tool.poetry.scripts]
+threatcorrelator = "threatcorrelator.cli:cli"
 
 [tool.poetry.group.dev.dependencies]
 streamlit = "^1.45.1"
@@ -24,11 +31,3 @@ plotly = "^6.1.2"
 pytest = "^8.3.5"
 pytest-mock = "^3.14.1"
 flake8 = "^7.2.0"
-
-[build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
-
-[tool.poetry.scripts]
-threatcorrelator = "threatcorrelator.cli:cli"
-
