@@ -127,16 +127,6 @@ poetry run pytest
 
 ---
 
-## 🐳 Docker Support *(Coming Soon)*
-
----
-
-## 📸 Screenshots *(to add)*
-
-> Add:
-> - 📷 CLI screenshot
-> - 📷 Dashboard showing scan results & charts
-
 ---
 
 ## 📝 License
