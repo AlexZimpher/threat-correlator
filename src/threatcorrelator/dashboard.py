@@ -13,14 +13,19 @@ session = get_session()
 iocs = session.query(IOC).all()
 
 if iocs:
-    df = pd.DataFrame([{
-        "IP": ioc.ip,
-        "Confidence": ioc.confidence,
-        "Country": ioc.country,
-        "Last Seen": ioc.last_seen,
-        "Usage": ioc.usage,
-        "Source": ioc.source
-    } for ioc in iocs])
+    df = pd.DataFrame(
+        [
+            {
+                "IP": ioc.ip,
+                "Confidence": ioc.confidence,
+                "Country": ioc.country,
+                "Last Seen": ioc.last_seen,
+                "Usage": ioc.usage,
+                "Source": ioc.source,
+            }
+            for ioc in iocs
+        ]
+    )
 
     st.metric("Total IOCs", len(df))
 
@@ -28,7 +33,12 @@ if iocs:
 
     with col1:
         st.subheader("📊 Threat Confidence Levels")
-        bins = pd.cut(df["Confidence"], bins=[0, 50, 80, 100], right=False, labels=["Low", "Medium", "High"])
+        bins = pd.cut(
+            df["Confidence"],
+            bins=[0, 50, 80, 100],
+            right=False,
+            labels=["Low", "Medium", "High"],
+        )
         st.bar_chart(bins.value_counts().sort_index())
 
     with col2:
@@ -59,7 +69,7 @@ if uploaded_file:
             "📥 Download Results as CSV",
             results_df.to_csv(index=False),
             "correlation_results.csv",
-            "text/csv"
+            "text/csv",
         )
     else:
         st.info("No threats detected in the uploaded log.")

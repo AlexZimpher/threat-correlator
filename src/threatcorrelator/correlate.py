@@ -1,95 +1,155 @@
-import csv
 import json
-import yaml
+import logging
+from urllib.parse import urlparse
 from pathlib import Path
-from typing import List, Optional
+from datetime import datetime, timedelta
+import yaml
+
 from threatcorrelator.storage import get_session, IOC
+from threatcorrelator.mitre_map import MITRE_MAPPING
+from threatcorrelator.country_map import COUNTRY_MAP
 
-CONFIG_PATH = Path("config/config.yaml")
+logger = logging.getLogger(__name__)
 
-def load_severity_thresholds() -> dict:
+# Path to config.yaml (for correlation settings)
+CONFIG_PATH = Path(__file__).resolve().parents[2] / "config" / "config.yaml"
+
+
+def extract_indicators_from_log(log_file_path: Path) -> dict[str, int]:
     """
-    Loads severity classification thresholds from config.
-    Falls back to defaults if config is missing or invalid.
+    Parse a newline-delimited JSON log file and return a dict mapping
+    each unique indicator (IP or domain) to its occurrence count.
     """
+    freq: dict[str, int] = {}
+    with open(log_file_path, "r") as f:
+        for line in f:
+            try:
+                entry = json.loads(line)
+            except json.JSONDecodeError:
+                logger.warning("Skipping invalid JSON line in %s", log_file_path)
+                continue
+
+            ip = entry.get("src_ip", "")
+            domain = (
+                entry.get("src_domain") or entry.get("domain") or entry.get("url", "")
+            )
+            if domain and domain.startswith("http"):
+                parsed = urlparse(domain)
+                domain = parsed.netloc.lower()
+
+            if ip:
+                freq[ip] = freq.get(ip, 0) + 1
+            if domain:
+                freq[domain] = freq.get(domain, 0) + 1
+
+    return freq
+
+
+def correlate_logs(log_file_path: Path) -> list[dict]:
+    """
+    Correlate indicators found in the given log file against stored IOCs.
+    Returns a list of result dicts, each containing:
+      - indicator, ip, confidence, country, country_name,
+        last_seen, usage, source, severity, attack_technique_id,
+        attack_technique_name, count_in_log
+    """
+
+    # Load correlation settings from config.yaml (frequency & age)
     try:
-        with open(CONFIG_PATH, "r", encoding="utf-8") as f:
-            config = yaml.safe_load(f)
-        return config.get("severity_thresholds", {"high": 80, "medium": 50})
+        with open(CONFIG_PATH, "r") as f:
+            cfg = yaml.safe_load(f)
+        corr_cfg = cfg.get("correlation", {})
+        freq_thresh = corr_cfg.get("frequency_threshold", 0)
+        max_age_days = corr_cfg.get("max_age_days", 0)
     except Exception:
-        return {"high": 80, "medium": 50}
+        logger.warning("Unable to load correlation settings; using defaults")
+        freq_thresh = 0
+        max_age_days = 0
 
-def extract_ips_from_log(file_path: Path) -> set:
-    """
-    Extracts IP addresses from Suricata-style JSON log.
-    Supports src_ip, dest_ip, or generic ip fields.
-    """
-    with open(file_path, "r", encoding="utf-8") as f:
-        lines = f.readlines()
+    # Build frequency dictionary of indicators
+    freq = extract_indicators_from_log(log_file_path)
 
-    ips = set()
-    for line in lines:
-        try:
-            record = json.loads(line)
-            for key in ["src_ip", "dest_ip", "ip"]:
-                ip = record.get(key)
-                if ip:
-                    ips.add(ip)
-        except json.JSONDecodeError:
+    # Load all IOCs from the database into a dict keyed by IP (no domain in model)
+    session = get_session()
+    all_iocs = {
+        ioc.ip: {
+            "ip": ioc.ip or "",
+            "confidence": ioc.confidence or 0,
+            "country": ioc.country or "",
+            "last_seen": ioc.last_seen.isoformat() if ioc.last_seen else "",
+            "usage": ioc.usage or "",
+            "source": ioc.source or "",
+        }
+        for ioc in session.query(IOC).all()
+    }
+
+    results: list[dict] = []
+    now = datetime.utcnow()
+    age_limit = now - timedelta(days=max_age_days) if max_age_days > 0 else None
+
+    for indicator, count in freq.items():
+        if indicator not in all_iocs:
             continue
-    return ips
 
-def rate_threat(confidence: int, thresholds: dict) -> str:
-    """
-    Maps confidence score to severity label based on thresholds.
-    """
-    if confidence >= thresholds["high"]:
-        return "High"
-    elif confidence >= thresholds["medium"]:
-        return "Medium"
-    else:
-        return "Low"
+        data = all_iocs[indicator]
+        confidence = data.get("confidence", 0)
 
-def correlate_logs(log_path: Path, session: Optional[any] = None) -> List[dict]:
-    """
-    Correlates a log file with known IOCs from the database.
-    Returns a list of matching threats with severity classification.
-    """
-    if session is None:
-        session = get_session()
+        # Base severity from confidence
+        if confidence >= 90:
+            base_severity = "High"
+        elif confidence >= 50:
+            base_severity = "Medium"
+        elif confidence > 0:
+            base_severity = "Low"
+        else:
+            base_severity = "Medium"
 
-    ips = extract_ips_from_log(log_path)
-    thresholds = load_severity_thresholds()
-    results = []
+        # Age filtering
+        if age_limit and data.get("last_seen"):
+            try:
+                last_dt = datetime.fromisoformat(
+                    data["last_seen"].replace("Z", "+00:00")
+                )
+                if last_dt < age_limit:
+                    logger.debug(
+                        "Skipping %s: last_seen older than %d days",
+                        indicator,
+                        max_age_days,
+                    )
+                    continue
+            except ValueError:
+                pass  # If parsing fails, do not skip
 
-    for ip in ips:
-        ioc = session.get(IOC, ip)
-        if ioc:
-            severity = rate_threat(ioc.confidence, thresholds)
-            results.append({
-                "ip": ip,
-                "confidence": ioc.confidence,
-                "country": ioc.country,
-                "last_seen": ioc.last_seen.isoformat().replace("Z", ""),
-                "usage": ioc.usage,
-                "severity": severity
-            })
+        # Frequency-based escalation
+        severity = base_severity
+        if freq_thresh and count > freq_thresh:
+            severity = "Critical"
+
+        # Country name resolution
+        country_code = data.get("country", "")
+        country_name = COUNTRY_MAP.get(country_code, country_code)
+
+        # MITRE ATT&CK mapping
+        usage_key = data.get("usage") or indicator
+        technique_id, technique_name = MITRE_MAPPING.get(
+            usage_key, MITRE_MAPPING["__default__"]
+        )
+
+        results.append(
+            {
+                "indicator": indicator,
+                "ip": data.get("ip", ""),
+                "confidence": confidence,
+                "country": country_code,
+                "country_name": country_name,
+                "last_seen": data.get("last_seen", ""),
+                "usage": data.get("usage", ""),
+                "source": data.get("source", ""),
+                "severity": severity,
+                "attack_technique_id": technique_id,
+                "attack_technique_name": technique_name,
+                "count_in_log": count,
+            }
+        )
 
     return results
-
-def save_results(results: List[dict], path: Path, fmt: str = "csv"):
-    """
-    Saves correlation results to file in CSV or JSON format.
-    """
-    path.parent.mkdir(parents=True, exist_ok=True)
-    if fmt == "json":
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(results, f, indent=2)
-    elif fmt == "csv":
-        with open(path, "w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=results[0].keys())
-            writer.writeheader()
-            writer.writerows(results)
-    else:
-        raise ValueError("Unsupported format")
-

@@ -6,15 +6,16 @@
 
 ---
 
-## 📌 Features
+## Features
 
-- ✅ Fetch IOCs from [AbuseIPDB](https://www.abuseipdb.com/)
-- ✅ Store threat intelligence locally via SQLAlchemy
-- ✅ Scan JSON log files for matching IPs
-- ✅ Classify threat severity (High / Medium / Low)
-- ✅ Visualize and interact via a Streamlit dashboard
-- ✅ Export threat matches to CSV or JSON
-- ✅ Clean modular code with full test coverage and CI
+- 🎯 **Multi-Source IOC Fetch**: Pull malicious IPs/domains from AbuseIPDB (requires API key) and AlienVault OTX (no key needed).
+- 🕵️ **IP & Domain Correlation**: Scan logs (newline-delimited JSON) to match both IP and domain indicators.
+- 🛡️ **MITRE ATT&CK Mapping**: Each matched IOC is tagged with a tactic/technique (e.g., T1110 – Brute Force for SSH usage).
+- ⚠️ **Critical Severity**: If an IOC appears more than _n_ times (configurable), it’s elevated to “Critical.”
+- ⏳ **Stale IOC Filtering**: Ignore IOCs whose `last_seen` is older than _X_ days (configurable).
+- 🌍 **Country Resolution**: Translates ISO code to full country name (e.g., US → United States).
+- 💻 **Streamlit Dashboard**: Interactive UI to fetch, correlate, visualize, filter, and download results.
+- ✅ **Comprehensive Test Suite & CI**: End-to-end and CLI tests, plus Black/Flake8/Bandit/pytest-cov in GitHub Actions.
 
 ---
 
