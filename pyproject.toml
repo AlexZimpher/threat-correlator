@@ -3,7 +3,7 @@ name = "threatcorrelator"
 version = "0.1.0"
 description = ""
 authors = [
-    {name = "Alex",email = "61612663+AlexZimpher@users.noreply.github.com"}
+    {name = "Alexander Zimpher",email = "alexanderzimpher@gmail.com"}
 ]
 readme = "README.md"
 requires-python = ">=3.11"
@@ -21,6 +21,8 @@ packages = [{include = "threatcorrelator", from = "src"}]
 streamlit = "^1.45.1"
 pandas = "^2.2.3"
 plotly = "^6.1.2"
+pytest = "^8.3.5"
+pytest-mock = "^3.14.1"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

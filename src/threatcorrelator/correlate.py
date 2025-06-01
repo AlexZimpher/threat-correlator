@@ -2,21 +2,28 @@ import csv
 import json
 import yaml
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 from threatcorrelator.storage import get_session, IOC
 
 CONFIG_PATH = Path("config/config.yaml")
 
 def load_severity_thresholds() -> dict:
+    """
+    Loads severity classification thresholds from config.
+    Falls back to defaults if config is missing or invalid.
+    """
     try:
         with open(CONFIG_PATH, "r", encoding="utf-8") as f:
             config = yaml.safe_load(f)
         return config.get("severity_thresholds", {"high": 80, "medium": 50})
     except Exception:
-        # Fallback to defaults if config is missing or malformed
         return {"high": 80, "medium": 50}
 
 def extract_ips_from_log(file_path: Path) -> set:
+    """
+    Extracts IP addresses from Suricata-style JSON log.
+    Supports src_ip, dest_ip, or generic ip fields.
+    """
     with open(file_path, "r", encoding="utf-8") as f:
         lines = f.readlines()
 
@@ -33,6 +40,9 @@ def extract_ips_from_log(file_path: Path) -> set:
     return ips
 
 def rate_threat(confidence: int, thresholds: dict) -> str:
+    """
+    Maps confidence score to severity label based on thresholds.
+    """
     if confidence >= thresholds["high"]:
         return "High"
     elif confidence >= thresholds["medium"]:
@@ -40,8 +50,14 @@ def rate_threat(confidence: int, thresholds: dict) -> str:
     else:
         return "Low"
 
-def correlate_logs(log_path: Path) -> List[dict]:
-    session = get_session()
+def correlate_logs(log_path: Path, session: Optional[any] = None) -> List[dict]:
+    """
+    Correlates a log file with known IOCs from the database.
+    Returns a list of matching threats with severity classification.
+    """
+    if session is None:
+        session = get_session()
+
     ips = extract_ips_from_log(log_path)
     thresholds = load_severity_thresholds()
     results = []
@@ -62,6 +78,9 @@ def correlate_logs(log_path: Path) -> List[dict]:
     return results
 
 def save_results(results: List[dict], path: Path, fmt: str = "csv"):
+    """
+    Saves correlation results to file in CSV or JSON format.
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
     if fmt == "json":
         with open(path, "w", encoding="utf-8") as f:
@@ -73,3 +92,4 @@ def save_results(results: List[dict], path: Path, fmt: str = "csv"):
             writer.writerows(results)
     else:
         raise ValueError("Unsupported format")
+

@@ -1,10 +1,7 @@
-import sys
-from pathlib import Path
-sys.path.append(str(Path(__file__).resolve().parents[1]))
-
 import click
 import yaml
 import csv
+from pathlib import Path
 from datetime import datetime
 from threatcorrelator.storage import get_session, IOC
 from threatcorrelator.fetch import fetch_abuseipdb_blacklist
