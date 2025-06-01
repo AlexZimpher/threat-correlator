@@ -1,0 +1,19 @@
+[project]
+name = "threatcorrelator"
+version = "0.1.0"
+description = "Threat intelligence correlation tool with IOC ingestion and log matching"
+authors = [
+    { name = "Alexander Zimpher", email = "alexanderzimpher@gmail.com" }
+]
+license = { text = "MIT" }
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "click>=8.0,<8.2",
+    "pyyaml>=6.0.2,<7.0.0"
+]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+

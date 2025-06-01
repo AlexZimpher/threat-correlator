@@ -1,0 +1,6 @@
+abuseipdb:
+  api_key: "your_api_key_here"
+  endpoint: "https://api.abuseipdb.com/api/v2/blacklist"
+  max_age_in_days: 30
+  confidence_threshold: 75
+
