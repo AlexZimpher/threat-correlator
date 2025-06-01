@@ -4,6 +4,7 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 import click
 import yaml
+import csv
 from datetime import datetime
 from threatcorrelator.storage import get_session, IOC
 from threatcorrelator.fetch import fetch_abuseipdb_blacklist
@@ -83,16 +84,27 @@ def correlate(logfile):
 
 @cli.command()
 @click.argument("logfile", type=click.Path(exists=True))
-@click.option("--out", "-o", type=click.Path(), default="outputs/results.csv", help="Output file")
-@click.option("--fmt", type=click.Choice(["csv", "json"]), default="csv", help="Export format")
-def export(logfile, out, fmt):
-    """Correlate logs and export to CSV or JSON."""
+@click.option("--output", "-o", type=click.Path(), default="outputs/threats.csv", help="Output CSV file path")
+def export(logfile, output):
+    """Scan a log file and export matched IOCs to CSV."""
     try:
         results = correlate_logs(Path(logfile))
-        save_results(results, Path(out), fmt)
-        click.echo(f"✅ Exported {len(results)} results to {out} ({fmt})")
+        if not results:
+            click.echo("✅ No threats found.")
+            return
+
+        with open(output, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(["ip", "confidence", "severity", "category", "timestamp"])
+            for r in results:
+                writer.writerow([
+                    r["ip"],
+                    r["confidence"],
+                    r["severity"],
+                    r.get("category", ""),
+                    r.get("timestamp", "")
+                ])
+
+        click.echo(f"✅ Exported {len(results)} threats to {output}")
     except Exception as e:
         click.echo(f"❌ Export failed: {e}")
-
-if __name__ == "__main__":
-    cli()

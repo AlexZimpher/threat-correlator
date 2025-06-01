@@ -1,0 +1,41 @@
+# Bytecode
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+env/
+ENV/
+*.egg-info/
+.poetry/
+
+# Config and secrets
+config/config.yaml
+
+# Logs and outputs
+*.log
+*.csv
+*.sqlite
+*.db
+*.bak
+threats.db
+
+# Notebooks and caches
+.ipynb_checkpoints/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE/editor metadata
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Streamlit cache
+.streamlit/
+
+# Docker and CI
+docker-compose.yml
+.Dockerfile
+
