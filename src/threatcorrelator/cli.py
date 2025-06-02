@@ -61,7 +61,7 @@ def show_config():
 
 @cli.command()
 def fetch():
-    """Fetch blacklisted IPs from AbuseIPDB and store them."""
+    """Fetch blacklisted IPs from AbuseIPDB and OTX, store them."""
     try:
         api_key = get_abuseipdb_key()
     except Exception as e:
@@ -72,53 +72,67 @@ def fetch():
         sys.exit(1)
 
     try:
-        iocs = fetch_abuseipdb_blacklist(api_key=api_key)
+        abuse_iocs = fetch_abuseipdb_blacklist(api_key=api_key)
     except Exception as e:
         logger.exception("Error fetching IOCs from AbuseIPDB")
         click.echo("❌ Fetch failed: check API key and network connectivity.")
         sys.exit(1)
 
-    session = get_session()
-    added = 0
+    try:
+        otx_iocs = fetch_otx_feed()
+    except Exception as e:
+        logger.warning("Failed to fetch OTX IOCs: %s", e)
+        otx_iocs = []
 
-    for ioc in iocs:
-        ip_address = ioc.get("ip")
+    all_iocs = abuse_iocs + otx_iocs
+
+    if not all_iocs:
+        logger.warning("No IOCs retrieved from either source.")
+        click.echo("❌ No IOCs retrieved from AbuseIPDB or OTX.")
+        sys.exit(1)
+
+
+session = get_session()
+added = 0
+source_counts = {}
+
+for ioc in all_iocs:
+    ip_address = ioc.get("ip")
+    if not ip_address:
+        continue
+
+    try:
+        existing = session.get(IOC, ip_address)
+    except Exception as e:
+        logger.error("Database lookup failed for IP %s: %s", ip_address, e, exc_info=True)
+        click.echo("❌ Fetch/store failed: database lookup error.")
+        sys.exit(1)
+
+    if not existing:
         try:
-            existing = session.get(IOC, ip_address)
-        except Exception as e:
-            logger.error(
-                "Database lookup failed for IP %s: %s", ip_address, e, exc_info=True
+            obj = IOC(
+                ip=ip_address,
+                confidence=ioc.get("confidence", 0),
+                country=ioc.get("country", ""),
+                last_seen=datetime.fromisoformat(ioc.get("last_seen", "").replace("Z", "+00:00")),
+                usage=ioc.get("usage", ""),
+                source=ioc.get("source", "Unknown"),
             )
-            click.echo("❌ Fetch/store failed: database lookup error.")
-            sys.exit(1)
-
-        if not existing:
-            try:
-                obj = IOC(
-                    ip=ip_address,
-                    confidence=ioc.get("confidence", 0),
-                    country=ioc.get("country", ""),
-                    last_seen=datetime.fromisoformat(
-                        ioc.get("last_seen", "").replace("Z", "+00:00")
-                    ),
-                    usage=ioc.get("usage", ""),
-                    source=ioc.get("source", "AbuseIPDB"),
-                )
-                session.add(obj)
-                added += 1
-            except Exception as e:
-                logger.error(
-                    "Error creating IOC object for IP %s: %s",
-                    ip_address,
-                    e,
-                    exc_info=True,
-                )
-                continue
+            session.add(obj)
+            added += 1
+            source = obj.source or "Unknown"
+            source_counts[source] = source_counts.get(source, 0) + 1
+        except Exception as e:
+            logger.error("Error creating IOC object for IP %s: %s", ip_address, e, exc_info=True)
+            continue
 
     try:
         session.commit()
         logger.info("Stored %d new IOCs in database", added)
         click.echo(f"✅ Stored {added} new IOCs in database.")
+        for source, count in source_counts.items():
+            click.echo(f"- {source}: {count}")
+
     except Exception as e:
         logger.exception("Database commit failed")
         click.echo("❌ Fetch/store failed: could not commit to database.")
@@ -209,20 +223,35 @@ def export(logfile, output):
     try:
         with open(output_path, "w", newline="") as f:
             writer = csv.writer(f)
-            writer.writerow(
-                ["ip", "confidence", "country", "last_seen", "usage", "severity"]
-            )
+            writer.writerow([
+                "indicator",
+                "ip",
+                "confidence",
+                "country",
+                "country_name",
+                "last_seen",
+                "usage",
+                "source",
+                "severity",
+                "attack_technique_id",
+                "attack_technique_name",
+                "count_in_log",
+            ])
             for r in results:
-                writer.writerow(
-                    [
-                        r.get("ip", ""),
-                        r.get("confidence", ""),
-                        r.get("country", ""),
-                        r.get("last_seen", ""),
-                        r.get("usage", ""),
-                        r.get("severity", ""),
-                    ]
-                )
+                writer.writerow([
+                    r.get("indicator", ""),
+                    r.get("ip", ""),
+                    r.get("confidence", ""),
+                    r.get("country", ""),
+                    r.get("country_name", ""),
+                    r.get("last_seen", ""),
+                    r.get("usage", ""),
+                    r.get("source", ""),
+                    r.get("severity", ""),
+                    r.get("attack_technique_id", ""),
+                    r.get("attack_technique_name", ""),
+                    r.get("count_in_log", ""),
+                ])
         logger.info("Exported %d threats to %s", len(results), output_path)
         click.echo(f"✅ Exported {len(results)} threats to {output}")
     except PermissionError:
