@@ -100,16 +100,16 @@ def correlate_logs(log_file_path: Path) -> list[dict]:
 
     session = get_session()
     all_iocs = {
-        ioc.ip: {
-            "ip": ioc.ip or "",
-            "confidence": ioc.confidence or 0,
-            "country": ioc.country or "",
-            "last_seen": ioc.last_seen.isoformat() if ioc.last_seen else "",
-            "usage": ioc.usage or "",
-            "source": ioc.source or "",
-        }
-        for ioc in session.query(IOC).all()
+    ioc.indicator: {
+        "indicator": ioc.indicator,
+        "confidence": ioc.confidence or 0,
+        "country": ioc.country or "",
+        "last_seen": ioc.last_seen.isoformat() if ioc.last_seen else "",
+        "usage": ioc.usage or "",
+        "source": ioc.source or "",
     }
+    for ioc in session.query(IOC).all()
+}
 
     results: list[dict] = []
 
@@ -141,7 +141,7 @@ def correlate_logs(log_file_path: Path) -> list[dict]:
         results.append(
             {
                 "indicator": indicator,
-                "ip": data.get("ip", ""),
+                "ip": data.get("indicator", ""),
                 "confidence": data.get("confidence", 0),
                 "country": country_code,
                 "country_name": country_name,

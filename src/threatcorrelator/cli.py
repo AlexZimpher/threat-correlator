@@ -15,7 +15,8 @@ from threatcorrelator.fetch import (
     fetch_otx_feed,
 )
 from threatcorrelator.correlate import correlate_logs
-
+import logging
+logging.basicConfig(level=logging.DEBUG)
 # Initialize logging
 setup_logging()
 logger = logging.getLogger(__name__)

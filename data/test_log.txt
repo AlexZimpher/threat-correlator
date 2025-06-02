@@ -1,3 +1,0 @@
-Jan 1 00:00:01 sshd[1234]: Failed login from 198.51.100.1
-Jan 1 00:00:02 sshd[1234]: Failed login from 203.0.113.1
-

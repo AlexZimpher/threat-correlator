@@ -28,14 +28,15 @@ def get_session():
 
 class IOC(Base):
     """
-    SQLAlchemy ORM model for IP-based threat intelligence IOCs.
+    SQLAlchemy ORM model for threat intelligence indicators (IP or domain).
     """
 
     __tablename__ = "ioc_blacklist"
 
-    ip = Column(String, primary_key=True)
+    indicator = Column(String, primary_key=True)  # Unified field for IP or domain
     confidence = Column(Integer)
     country = Column(String)
     last_seen = Column(DateTime)
     usage = Column(String)
     source = Column(String)
+
