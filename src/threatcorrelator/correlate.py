@@ -2,7 +2,7 @@ import json
 import logging
 from urllib.parse import urlparse
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import yaml
 
 from threatcorrelator.storage import get_session, IOC
@@ -45,6 +45,36 @@ def extract_indicators_from_log(log_file_path: Path) -> dict[str, int]:
     return freq
 
 
+def rate_threat(confidence: int, count: int, last_seen: str | None, freq_thresh: int = 0, max_age_days: int = 0) -> str:
+    """
+    Determine severity of an IOC based on confidence, frequency, and age.
+    """
+    # Base severity from confidence
+    if confidence >= 90:
+        severity = "High"
+    elif confidence >= 50:
+        severity = "Medium"
+    elif confidence > 0:
+        severity = "Low"
+    else:
+        severity = "Medium"
+
+    # Age filtering
+    if max_age_days > 0 and last_seen:
+        try:
+            last_dt = datetime.fromisoformat(last_seen.replace("Z", "+00:00"))
+            if last_dt < datetime.now(timezone.utc) - timedelta(days=max_age_days): 
+                return "None"
+        except Exception:
+            pass
+
+    # Frequency escalation
+    if freq_thresh > 0 and count > freq_thresh:
+        return "Critical"
+
+    return severity
+
+
 def correlate_logs(log_file_path: Path) -> list[dict]:
     """
     Correlate indicators found in the given log file against stored IOCs.
@@ -66,10 +96,8 @@ def correlate_logs(log_file_path: Path) -> list[dict]:
         freq_thresh = 0
         max_age_days = 0
 
-    # Build frequency dictionary of indicators
     freq = extract_indicators_from_log(log_file_path)
 
-    # Load all IOCs from the database into a dict keyed by IP (no domain in model)
     session = get_session()
     all_iocs = {
         ioc.ip: {
@@ -84,52 +112,27 @@ def correlate_logs(log_file_path: Path) -> list[dict]:
     }
 
     results: list[dict] = []
-    now = datetime.utcnow()
-    age_limit = now - timedelta(days=max_age_days) if max_age_days > 0 else None
 
     for indicator, count in freq.items():
         if indicator not in all_iocs:
             continue
 
         data = all_iocs[indicator]
-        confidence = data.get("confidence", 0)
+        severity = rate_threat(
+            confidence=data.get("confidence", 0),
+            count=count,
+            last_seen=data.get("last_seen"),
+            freq_thresh=freq_thresh,
+            max_age_days=max_age_days,
+        )
 
-        # Base severity from confidence
-        if confidence >= 90:
-            base_severity = "High"
-        elif confidence >= 50:
-            base_severity = "Medium"
-        elif confidence > 0:
-            base_severity = "Low"
-        else:
-            base_severity = "Medium"
+        if severity == "None":
+            logger.debug("Skipping %s: filtered out by age", indicator)
+            continue
 
-        # Age filtering
-        if age_limit and data.get("last_seen"):
-            try:
-                last_dt = datetime.fromisoformat(
-                    data["last_seen"].replace("Z", "+00:00")
-                )
-                if last_dt < age_limit:
-                    logger.debug(
-                        "Skipping %s: last_seen older than %d days",
-                        indicator,
-                        max_age_days,
-                    )
-                    continue
-            except ValueError:
-                pass  # If parsing fails, do not skip
-
-        # Frequency-based escalation
-        severity = base_severity
-        if freq_thresh and count > freq_thresh:
-            severity = "Critical"
-
-        # Country name resolution
         country_code = data.get("country", "")
         country_name = COUNTRY_MAP.get(country_code, country_code)
 
-        # MITRE ATT&CK mapping
         usage_key = data.get("usage") or indicator
         technique_id, technique_name = MITRE_MAPPING.get(
             usage_key, MITRE_MAPPING["__default__"]
@@ -139,7 +142,7 @@ def correlate_logs(log_file_path: Path) -> list[dict]:
             {
                 "indicator": indicator,
                 "ip": data.get("ip", ""),
-                "confidence": confidence,
+                "confidence": data.get("confidence", 0),
                 "country": country_code,
                 "country_name": country_name,
                 "last_seen": data.get("last_seen", ""),
