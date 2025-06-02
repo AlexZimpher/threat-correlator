@@ -9,14 +9,13 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-# Default location of config.yaml
-CONFIG_PATH = Path(__file__).resolve().parents[2] / "config" / "config.yaml"
-
+from threatcorrelator.config_loader import load_config
+config = load_config()
 
 def get_abuseipdb_key() -> str:
     """
     Retrieve the AbuseIPDB API key from the environment (ABUSEIPDB_API_KEY)
-    or fall back to config/config.yaml. Raises an exception if neither is found.
+    or fall back to config. Raises an exception if neither is found.
     """
     # 1) Check environment variable first
     env_key = os.getenv("ABUSEIPDB_API_KEY")
@@ -24,25 +23,16 @@ def get_abuseipdb_key() -> str:
         logger.debug("Using AbuseIPDB API key from environment")
         return env_key.strip()
 
-    # 2) Fallback to config.yaml
+    # 2) Fallback to config loader
     try:
-        with open(CONFIG_PATH, "r") as f:
-            cfg = yaml.safe_load(f)
-        api_key = cfg["abuseipdb"]["api_key"]
+        api_key = config["abuseipdb"]["api_key"]
         if not api_key:
-            raise KeyError("API key is empty in config.yaml")
-        logger.debug("Using AbuseIPDB API key from config.yaml")
+            raise KeyError("API key is empty in config")
+        logger.debug("Using AbuseIPDB API key from config")
         return api_key.strip()
-    except FileNotFoundError:
-        logger.error("Config file not found at %s", CONFIG_PATH)
-        raise
     except KeyError as e:
-        logger.error("API key missing in config.yaml: %s", e)
+        logger.error("API key missing in config: %s", e)
         raise
-    except yaml.YAMLError as e:
-        logger.error("Error parsing config.yaml: %s", e)
-        raise
-
 
 def fetch_abuseipdb_blacklist(api_key: str) -> list[dict]:
     """
@@ -52,8 +42,7 @@ def fetch_abuseipdb_blacklist(api_key: str) -> list[dict]:
     """
     url = "https://api.abuseipdb.com/api/v2/blacklist"
     headers = {"Key": api_key, "Accept": "application/json"}
-    params = {"confidenceMinimum": 90}  # example threshold
-
+    params = {"confidenceMinimum": config["abuseipdb"].get("confidence_minimum", 90)}
     try:
         response = requests.get(url, headers=headers, params=params, timeout=30)
         response.raise_for_status()

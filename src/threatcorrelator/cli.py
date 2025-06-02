@@ -69,14 +69,14 @@ def fetch():
         click.echo(
             "❌ Fetch/store failed: cannot find API key in environment or config."
         )
-        sys.exit(1)
+        return
 
     try:
         abuse_iocs = fetch_abuseipdb_blacklist(api_key=api_key)
     except Exception as e:
         logger.exception("Error fetching IOCs from AbuseIPDB")
         click.echo("❌ Fetch failed: check API key and network connectivity.")
-        sys.exit(1)
+        return
 
     try:
         otx_iocs = fetch_otx_feed()
@@ -89,42 +89,50 @@ def fetch():
     if not all_iocs:
         logger.warning("No IOCs retrieved from either source.")
         click.echo("❌ No IOCs retrieved from AbuseIPDB or OTX.")
-        sys.exit(1)
+        return
 
+    session = get_session()
+    added = 0
+    source_counts = {}
 
-session = get_session()
-added = 0
-source_counts = {}
-
-for ioc in all_iocs:
-    ip_address = ioc.get("ip")
-    if not ip_address:
-        continue
-
-    try:
-        existing = session.get(IOC, ip_address)
-    except Exception as e:
-        logger.error("Database lookup failed for IP %s: %s", ip_address, e, exc_info=True)
-        click.echo("❌ Fetch/store failed: database lookup error.")
-        sys.exit(1)
-
-    if not existing:
-        try:
-            obj = IOC(
-                ip=ip_address,
-                confidence=ioc.get("confidence", 0),
-                country=ioc.get("country", ""),
-                last_seen=datetime.fromisoformat(ioc.get("last_seen", "").replace("Z", "+00:00")),
-                usage=ioc.get("usage", ""),
-                source=ioc.get("source", "Unknown"),
-            )
-            session.add(obj)
-            added += 1
-            source = obj.source or "Unknown"
-            source_counts[source] = source_counts.get(source, 0) + 1
-        except Exception as e:
-            logger.error("Error creating IOC object for IP %s: %s", ip_address, e, exc_info=True)
+    for ioc in all_iocs:
+        ip_address = ioc.get("ip")
+        if not ip_address:
             continue
+
+        try:
+            existing = session.get(IOC, ip_address)
+        except Exception as e:
+            logger.error(
+                "Database lookup failed for IP %s: %s", ip_address, e, exc_info=True
+            )
+            click.echo("❌ Fetch/store failed: database lookup error.")
+            return
+
+        if not existing:
+            try:
+                obj = IOC(
+                    ip=ip_address,
+                    confidence=ioc.get("confidence", 0),
+                    country=ioc.get("country", ""),
+                    last_seen=datetime.fromisoformat(
+                        ioc.get("last_seen", "").replace("Z", "+00:00")
+                    ),
+                    usage=ioc.get("usage", ""),
+                    source=ioc.get("source", "Unknown"),
+                )
+                session.add(obj)
+                added += 1
+                source = obj.source or "Unknown"
+                source_counts[source] = source_counts.get(source, 0) + 1
+            except Exception as e:
+                logger.error(
+                    "Error creating IOC object for IP %s: %s",
+                    ip_address,
+                    e,
+                    exc_info=True,
+                )
+                continue
 
     try:
         session.commit()
@@ -132,11 +140,10 @@ for ioc in all_iocs:
         click.echo(f"✅ Stored {added} new IOCs in database.")
         for source, count in source_counts.items():
             click.echo(f"- {source}: {count}")
-
     except Exception as e:
         logger.exception("Database commit failed")
         click.echo("❌ Fetch/store failed: could not commit to database.")
-        sys.exit(1)
+        return
 
 
 @cli.command()
@@ -197,7 +204,14 @@ def correlate(logfile):
     default="outputs/threats.csv",
     help="Output CSV file path",
 )
-def export(logfile, output):
+@click.option(
+    "--min-confidence",
+    "-c",
+    type=int,
+    default=0,
+    help="Only export IOCs with confidence ≥ this value",
+)
+def export(logfile, output, min_confidence):
     """Scan a log file and export matched IOCs to CSV."""
     logfile_path = Path(logfile)
     if not logfile_path.exists():
@@ -212,9 +226,11 @@ def export(logfile, output):
         click.echo(f"❌ Export failed: correlation error - {e}")
         sys.exit(1)
 
-    if not results:
-        logger.info("Export: no threats found in %s", logfile_path)
-        click.echo("✅ No threats found.")
+    filtered = [r for r in results if r.get("confidence", 0) >= min_confidence]
+
+    if not filtered:
+        logger.info("Export: no threats met confidence threshold in %s", logfile_path)
+        click.echo("✅ No threats met the confidence filter.")
         return
 
     output_path = Path(output)
@@ -223,37 +239,41 @@ def export(logfile, output):
     try:
         with open(output_path, "w", newline="") as f:
             writer = csv.writer(f)
-            writer.writerow([
-                "indicator",
-                "ip",
-                "confidence",
-                "country",
-                "country_name",
-                "last_seen",
-                "usage",
-                "source",
-                "severity",
-                "attack_technique_id",
-                "attack_technique_name",
-                "count_in_log",
-            ])
-            for r in results:
-                writer.writerow([
-                    r.get("indicator", ""),
-                    r.get("ip", ""),
-                    r.get("confidence", ""),
-                    r.get("country", ""),
-                    r.get("country_name", ""),
-                    r.get("last_seen", ""),
-                    r.get("usage", ""),
-                    r.get("source", ""),
-                    r.get("severity", ""),
-                    r.get("attack_technique_id", ""),
-                    r.get("attack_technique_name", ""),
-                    r.get("count_in_log", ""),
-                ])
-        logger.info("Exported %d threats to %s", len(results), output_path)
-        click.echo(f"✅ Exported {len(results)} threats to {output}")
+            writer.writerow(
+                [
+                    "indicator",
+                    "ip",
+                    "confidence",
+                    "country",
+                    "country_name",
+                    "last_seen",
+                    "usage",
+                    "source",
+                    "severity",
+                    "attack_technique_id",
+                    "attack_technique_name",
+                    "count_in_log",
+                ]
+            )
+            for r in filtered:
+                writer.writerow(
+                    [
+                        r.get("indicator", ""),
+                        r.get("ip", ""),
+                        r.get("confidence", ""),
+                        r.get("country", ""),
+                        r.get("country_name", ""),
+                        r.get("last_seen", ""),
+                        r.get("usage", ""),
+                        r.get("source", ""),
+                        r.get("severity", ""),
+                        r.get("attack_technique_id", ""),
+                        r.get("attack_technique_name", ""),
+                        r.get("count_in_log", ""),
+                    ]
+                )
+        logger.info("Exported %d filtered threats to %s", len(filtered), output_path)
+        click.echo(f"✅ Exported {len(filtered)} threats to {output}")
     except PermissionError:
         logger.error("Permission denied writing to %s", output_path)
         click.echo("❌ Export failed: permission denied writing file.")
@@ -262,3 +282,4 @@ def export(logfile, output):
         logger.exception("Unexpected error during export")
         click.echo(f"❌ Export failed: {e}")
         sys.exit(1)
+
