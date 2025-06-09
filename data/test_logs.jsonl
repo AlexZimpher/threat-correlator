@@ -1,0 +1,5 @@
+{"src_ip": "192.168.143.168", "src_domain": "benign138.example.com", "timestamp": "2025-06-09T19:42:25.622325", "src_port": 27609, "dest_port": 3389, "protocol": "TCP"}
+{"src_ip": "192.168.191.186", "src_domain": "benign283.example.com", "timestamp": "2025-06-09T20:35:25.622325", "src_port": 18271, "dest_port": 8080, "protocol": "UDP"}
+{"src_ip": "192.168.157.52", "src_domain": "benign464.example.com", "timestamp": "2025-06-09T20:46:25.622325", "src_port": 20804, "dest_port": 443, "protocol": "TCP"}
+{"src_ip": "192.168.52.60", "src_domain": "benign767.example.com", "timestamp": "2025-06-09T19:40:25.622325", "src_port": 50021, "dest_port": 3389, "protocol": "TCP"}
+{"src_ip": "192.168.47.233", "src_domain": "benign9.example.com", "timestamp": "2025-06-09T20:26:25.622325", "src_port": 44199, "dest_port": 3389, "protocol": "TCP"}

@@ -3,40 +3,27 @@ import logging
 import click
 import yaml
 import csv
-
 from pathlib import Path
 from datetime import datetime
-
 from threatcorrelator.logging_config import setup_logging
 from threatcorrelator.storage import get_session, IOC
-from threatcorrelator.fetch import (
-    fetch_abuseipdb_blacklist,
-    get_abuseipdb_key,
-    fetch_otx_feed,
-)
+from threatcorrelator.fetch import fetch_abuseipdb_blacklist, fetch_otx_feed
 from threatcorrelator.correlate import correlate_logs
-import logging
-logging.basicConfig(level=logging.DEBUG)
-# Initialize logging
+
 setup_logging()
 logger = logging.getLogger(__name__)
-
-# Path to config.yaml (fallback if no environment variable for API key)
 CONFIG_PATH = Path(__file__).resolve().parents[2] / "config" / "config.yaml"
-
 
 @click.group()
 def cli():
     """Threat-Correlator CLI."""
     pass
 
-
 @cli.command()
 def greet():
     """Say hello to confirm CLI works."""
     logger.info("greet command invoked")
     click.echo("✅ Threat-Correlator CLI is working.")
-
 
 @cli.command()
 def show_config():
@@ -46,106 +33,79 @@ def show_config():
             config = yaml.safe_load(f)
         logger.info("Loaded config.yaml successfully")
         click.echo(config)
-    except FileNotFoundError:
-        logger.error("config.yaml not found at %s", CONFIG_PATH)
-        click.echo("❌ Failed to load config: config.yaml not found.")
-        sys.exit(1)
-    except yaml.YAMLError as e:
-        logger.error("YAML parsing error: %s", e, exc_info=True)
-        click.echo(f"❌ Failed to parse config.yaml: {e}")
-        sys.exit(1)
     except Exception as e:
-        logger.exception("Unexpected error in show_config")
+        logger.exception("Error loading config.yaml")
         click.echo(f"❌ Failed to load config: {e}")
         sys.exit(1)
 
-
 @cli.command()
-def fetch():
-    """Fetch blacklisted IPs from AbuseIPDB and OTX, store them."""
-    try:
-        api_key = get_abuseipdb_key()
-    except Exception as e:
-        logger.error("Failed to retrieve AbuseIPDB API key: %s", e)
-        click.echo(
-            "❌ Fetch/store failed: cannot find API key in environment or config."
-        )
-        return
-
-    try:
-        abuse_iocs = fetch_abuseipdb_blacklist(api_key=api_key)
-    except Exception as e:
-        logger.exception("Error fetching IOCs from AbuseIPDB")
-        click.echo("❌ Fetch failed: check API key and network connectivity.")
-        return
-
-    try:
-        otx_iocs = fetch_otx_feed()
-    except Exception as e:
-        logger.warning("Failed to fetch OTX IOCs: %s", e)
-        otx_iocs = []
-
-    all_iocs = abuse_iocs + otx_iocs
-
+@click.option(
+    "--source",
+    required=True,
+    type=click.Choice(["abuseipdb", "otx", "both"]),
+    help="Which IOC source to fetch: abuseipdb, otx, or both",
+)
+def fetch(source):
+    """Fetch IOCs from AbuseIPDB and/or OTX, and store them."""
+    all_iocs = []
+    if source in ("abuseipdb", "both"):
+        try:
+            abuse_iocs = fetch_abuseipdb_blacklist()
+            all_iocs.extend(abuse_iocs)
+            logger.info(f"Fetched {len(abuse_iocs)} IOCs from AbuseIPDB")
+        except Exception as e:
+            logger.error("Error fetching from AbuseIPDB: %s", e)
+    if source in ("otx", "both"):
+        try:
+            otx_iocs = fetch_otx_feed()
+            all_iocs.extend(otx_iocs)
+            logger.info(f"Fetched {len(otx_iocs)} IOCs from OTX")
+        except Exception as e:
+            logger.error("Error fetching from OTX: %s", e)
     if not all_iocs:
-        logger.warning("No IOCs retrieved from either source.")
-        click.echo("❌ No IOCs retrieved from AbuseIPDB or OTX.")
+        logger.warning("No IOCs fetched from any source.")
+        click.echo("❌ No IOCs retrieved.")
         return
-
     session = get_session()
     added = 0
     source_counts = {}
-
     for ioc in all_iocs:
-        ip_address = ioc.get("ip")
-        if not ip_address:
+        indicator = ioc.get("indicator")
+        if not indicator:
             continue
-
+        existing = session.get(IOC, indicator)
+        if existing:
+            continue
         try:
-            existing = session.get(IOC, ip_address)
-        except Exception as e:
-            logger.error(
-                "Database lookup failed for IP %s: %s", ip_address, e, exc_info=True
+            allowed_fields = {"indicator", "confidence", "country", "last_seen", "usage", "source", "type"}
+            ioc_data = {k: v for k, v in ioc.items() if k in allowed_fields}
+            if ioc_data.get("last_seen"):
+                ioc_data["last_seen"] = datetime.fromisoformat(ioc_data["last_seen"].replace("Z", "+00:00"))
+            obj = IOC(
+                indicator=ioc_data.get("indicator"),
+                confidence=ioc_data.get("confidence", 0),
+                country=ioc_data.get("country", ""),
+                last_seen=ioc_data.get("last_seen", None),
+                usage=ioc_data.get("usage", ""),
+                source=ioc_data.get("source", "unknown"),
+                type=ioc_data.get("type", ""),
             )
-            click.echo("❌ Fetch/store failed: database lookup error.")
-            return
-
-        if not existing:
-            try:
-                obj = IOC(
-                    ip=ip_address,
-                    confidence=ioc.get("confidence", 0),
-                    country=ioc.get("country", ""),
-                    last_seen=datetime.fromisoformat(
-                        ioc.get("last_seen", "").replace("Z", "+00:00")
-                    ),
-                    usage=ioc.get("usage", ""),
-                    source=ioc.get("source", "Unknown"),
-                )
-                session.add(obj)
-                added += 1
-                source = obj.source or "Unknown"
-                source_counts[source] = source_counts.get(source, 0) + 1
-            except Exception as e:
-                logger.error(
-                    "Error creating IOC object for IP %s: %s",
-                    ip_address,
-                    e,
-                    exc_info=True,
-                )
-                continue
-
+            session.add(obj)
+            added += 1
+            source = obj.source
+            source_counts[source] = source_counts.get(source, 0) + 1
+        except Exception as e:
+            logger.warning("Error processing IOC %s: %s", indicator, e)
+            continue
     try:
         session.commit()
         logger.info("Stored %d new IOCs in database", added)
         click.echo(f"✅ Stored {added} new IOCs in database.")
-        for source, count in source_counts.items():
-            click.echo(f"- {source}: {count}")
+        for src, count in source_counts.items():
+            click.echo(f"- {src}: {count}")
     except Exception as e:
-        logger.exception("Database commit failed")
-        click.echo("❌ Fetch/store failed: could not commit to database.")
-        return
-
+        logger.exception("Commit failed")
+        click.echo("❌ Failed to commit IOCs to database.")
 
 @cli.command()
 def count():
@@ -153,27 +113,19 @@ def count():
     try:
         session = get_session()
         total = session.query(IOC).count()
-        logger.info("Counted %d IOCs in database", total)
         click.echo(f"📦 {total} IOCs stored in the database.")
     except Exception as e:
         logger.exception("Database count failed")
         click.echo(f"❌ Count failed: {e}")
         sys.exit(1)
 
-
 @cli.command()
 @click.argument("logfile", type=click.Path(exists=True))
 def correlate(logfile):
     """Correlate a JSON log file against stored IOCs."""
     logfile_path = Path(logfile)
-    if not logfile_path.exists():
-        logger.error("Log file not found: %s", logfile_path)
-        click.echo("❌ Correlation failed: log file not found.")
-        sys.exit(1)
-
     try:
         results = correlate_logs(logfile_path)
-        logger.info("Correlation found %d threats in %s", len(results), logfile_path)
         click.echo(f"✅ Matched {len(results)} threats.")
         severity_counts = {"High": 0, "Medium": 0, "Low": 0}
         for r in results:
@@ -182,19 +134,10 @@ def correlate(logfile):
                 severity_counts[sev] += 1
         for level, cnt in severity_counts.items():
             click.echo(f"- {cnt} {level}")
-    except FileNotFoundError:
-        logger.error("Correlate: logfile not found: %s", logfile_path)
-        click.echo("❌ Correlation failed: log file not found.")
-        sys.exit(1)
-    except PermissionError:
-        logger.error("Permission denied reading log file: %s", logfile_path)
-        click.echo("❌ Correlation failed: permission denied reading log file.")
-        sys.exit(1)
     except Exception as e:
-        logger.exception("Unexpected error during correlation")
+        logger.exception("Correlation error")
         click.echo(f"❌ Correlation failed: {e}")
         sys.exit(1)
-
 
 @cli.command()
 @click.argument("logfile", type=click.Path(exists=True))
@@ -215,72 +158,47 @@ def correlate(logfile):
 def export(logfile, output, min_confidence):
     """Scan a log file and export matched IOCs to CSV."""
     logfile_path = Path(logfile)
-    if not logfile_path.exists():
-        logger.error("Export: logfile not found: %s", logfile_path)
-        click.echo("❌ Export failed: log file not found.")
-        sys.exit(1)
-
     try:
         results = correlate_logs(logfile_path)
     except Exception as e:
         logger.exception("Error during correlation in export")
-        click.echo(f"❌ Export failed: correlation error - {e}")
+        click.echo(f"❌ Export failed: {e}")
         sys.exit(1)
-
     filtered = [r for r in results if r.get("confidence", 0) >= min_confidence]
-
     if not filtered:
-        logger.info("Export: no threats met confidence threshold in %s", logfile_path)
         click.echo("✅ No threats met the confidence filter.")
         return
-
     output_path = Path(output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-
     try:
         with open(output_path, "w", newline="") as f:
             writer = csv.writer(f)
-            writer.writerow(
-                [
-                    "indicator",
-                    "ip",
-                    "confidence",
-                    "country",
-                    "country_name",
-                    "last_seen",
-                    "usage",
-                    "source",
-                    "severity",
-                    "attack_technique_id",
-                    "attack_technique_name",
-                    "count_in_log",
-                ]
-            )
+            writer.writerow([
+                "indicator", "ip", "confidence", "country", "country_name",
+                "last_seen", "usage", "source", "type", "severity",
+                "attack_technique_id", "attack_technique_name", "count_in_log"
+            ])
             for r in filtered:
-                writer.writerow(
-                    [
-                        r.get("indicator", ""),
-                        r.get("ip", ""),
-                        r.get("confidence", ""),
-                        r.get("country", ""),
-                        r.get("country_name", ""),
-                        r.get("last_seen", ""),
-                        r.get("usage", ""),
-                        r.get("source", ""),
-                        r.get("severity", ""),
-                        r.get("attack_technique_id", ""),
-                        r.get("attack_technique_name", ""),
-                        r.get("count_in_log", ""),
-                    ]
-                )
-        logger.info("Exported %d filtered threats to %s", len(filtered), output_path)
+                writer.writerow([
+                    r.get("indicator", ""),
+                    r.get("ip", ""),
+                    r.get("confidence", ""),
+                    r.get("country", ""),
+                    r.get("country_name", ""),
+                    r.get("last_seen", ""),
+                    r.get("usage", ""),
+                    r.get("source", ""),
+                    r.get("type", ""),
+                    r.get("severity", ""),
+                    r.get("attack_technique_id", ""),
+                    r.get("attack_technique_name", ""),
+                    r.get("count_in_log", ""),
+                ])
         click.echo(f"✅ Exported {len(filtered)} threats to {output}")
-    except PermissionError:
-        logger.error("Permission denied writing to %s", output_path)
-        click.echo("❌ Export failed: permission denied writing file.")
-        sys.exit(1)
     except Exception as e:
-        logger.exception("Unexpected error during export")
+        logger.exception("Export failed")
         click.echo(f"❌ Export failed: {e}")
         sys.exit(1)
 
+if __name__ == "__main__":
+    cli()
