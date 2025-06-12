@@ -21,7 +21,8 @@ def test_correlate_logs_detects_known_threat():
 
     # Add matching IOC to DB
     session.add(IOC(
-        ip="1.2.3.4",
+        indicator="1.2.3.4",
+        type="ip",
         confidence=85,
         country="US",
         last_seen=datetime.now(UTC),

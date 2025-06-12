@@ -34,8 +34,10 @@ def fetch_abuseipdb_blacklist(api_key: Optional[str] = None) -> list[dict]:
         return []
     iocs = []
     for entry in data:
+        indicator = entry.get("ipAddress", "")
         iocs.append({
-            "indicator": entry.get("ipAddress", ""),
+            "indicator": indicator,
+            "ip": indicator,  # Alias for compatibility
             "confidence": entry.get("abuseConfidenceScore", 0),
             "country": entry.get("countryCode", ""),
             "last_seen": entry.get("lastReportedAt", ""),
@@ -78,13 +80,19 @@ def fetch_otx_feed() -> list[dict]:
                 indicator_type = "vuln"
             else:
                 indicator_type = "unknown"
-            iocs.append({
-                "indicator": ind.get("indicator", ""),
+            indicator = ind.get("indicator", "")
+            ioc = {
+                "indicator": indicator,
                 "confidence": 0,
                 "country": "",
                 "last_seen": pulse_modified,
                 "usage": f"{pulse_name} ({', '.join(pulse_tags)})",
                 "source": f"OTX-{ind.get('type', 'unknown')}",
                 "type": indicator_type,
-            })
+            }
+            if indicator_type == "ip":
+                ioc["ip"] = indicator
+            elif indicator_type == "domain":
+                ioc["domain"] = indicator
+            iocs.append(ioc)
     return iocs

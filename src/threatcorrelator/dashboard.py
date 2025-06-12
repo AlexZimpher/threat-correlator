@@ -16,7 +16,8 @@ if iocs:
     df = pd.DataFrame(
         [
             {
-                "IP": ioc.ip,
+                "IP": ioc.ip or (ioc.indicator if getattr(ioc, 'type', None) == 'ip' else None),
+                "Domain": ioc.domain or (ioc.indicator if getattr(ioc, 'type', None) == 'domain' else None),
                 "Confidence": ioc.confidence,
                 "Country": ioc.country,
                 "Last Seen": ioc.last_seen,

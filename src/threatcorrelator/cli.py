@@ -41,7 +41,9 @@ def show_config():
 @cli.command()
 @click.option(
     "--source",
-    required=True,
+    required=False,
+    default="abuseipdb",
+    show_default=True,
     type=click.Choice(["abuseipdb", "otx", "both"]),
     help="Which IOC source to fetch: abuseipdb, otx, or both",
 )

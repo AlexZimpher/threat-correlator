@@ -42,15 +42,17 @@ def patch_fetch(monkeypatch):
     Also patch CLI’s direct references.
     """
     fixed_ioc = {
+        "indicator": "203.0.113.5",
         "ip": "203.0.113.5",
         "confidence": 95,
         "country": "US",
         "last_seen": "2025-05-30T12:00:00Z",
         "usage": "SSH",
         "source": "AbuseIPDB",
+        "type": "ip",
     }
 
-    def fake_fetch_abuseipdb(api_key):
+    def fake_fetch_abuseipdb(api_key=None):
         return [fixed_ioc]
 
     def fake_fetch_otx():
