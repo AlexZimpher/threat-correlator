@@ -43,7 +43,6 @@ def patch_fetch(monkeypatch):
     """
     fixed_ioc = {
         "indicator": "203.0.113.5",
-        "ip": "203.0.113.5",
         "confidence": 95,
         "country": "US",
         "last_seen": "2025-05-30T12:00:00Z",
@@ -82,32 +81,36 @@ def test_end_to_end(tmp_path, patch_fetch):
     with open(cfg_dir / "config.yaml", "w") as f:
         yaml.dump(config, f)
 
-    # 2) Set ABUSEIPDB_API_KEY to skip reading config.yaml inside get_abuseipdb_key()
+    # 2) Use a file-based SQLite DB in tmp_path
+    db_path = tmp_path / "test_tc.db"
+    db_url = f"sqlite:///{db_path}"
     monkeypatch = pytest.MonkeyPatch()
-    monkeypatch.setenv("ABUSEIPDB_API_KEY", "DUMMY_KEY")
+    monkeypatch.setenv("TC_DB_PATH", db_url)
 
     # 3) Redirect CLI’s CONFIG_PATH so it picks up our temp config
     cli_module.CONFIG_PATH = cfg_dir / "config.yaml"
     fetch_module.CONFIG_PATH = cfg_dir / "config.yaml"
 
     # 4) Run 'fetch' to insert the fixed IOC into the temp DB
-    result = runner.invoke(cli, ["fetch"])
+    result = runner.invoke(cli, ["fetch"], env={"TC_DB_PATH": db_url, "ABUSEIPDB_API_KEY": "DUMMY_KEY"})
     assert result.exit_code == 0
     assert "Stored 1 new IOCs" in result.output
 
     # 5) Create a small NDJSON log containing the IOC’s IP
-    log_path = tmp_path / "sample_log.txt"
+    log_path = tmp_path / "sample_log.json"
     with open(log_path, "w") as logf:
-        logf.write(json.dumps({"src_ip": patch_fetch["ip"]}) + "\n")
+        logf.write(json.dumps({"src_ip": patch_fetch["indicator"]}) + "\n")
         logf.write(json.dumps({"src_ip": "198.51.100.7"}) + "\n")
 
     # 6) Call correlate_logs() directly and verify results
-    results = correlate_logs(log_path)
+    from threatcorrelator.storage import get_session
+    session = get_session(db_url)
+    results = correlate_logs(log_path, session=session)
     assert isinstance(results, list)
     assert len(results) == 1
 
     entry = results[0]
-    assert entry["ip"] == patch_fetch["ip"]
+    assert entry["indicator"] == patch_fetch["indicator"]
     assert entry["confidence"] == patch_fetch["confidence"]
     assert entry["country"] == patch_fetch["country"]
     assert entry["usage"] == patch_fetch["usage"]

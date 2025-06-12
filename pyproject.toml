@@ -23,7 +23,7 @@ build-backend = "poetry.core.masonry.api"
 packages = [{ include = "threatcorrelator", from = "src" }]
 
 [tool.poetry.scripts]
-threatcorrelator = "threatcorrelator.cli:cli"
+threatcorrelator = "threatcorrelator.cli:main"
 
 [tool.poetry.group.dev.dependencies]
 streamlit = "^1.45.1"

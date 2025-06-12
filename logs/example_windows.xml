@@ -1,0 +1,12 @@
+<Events>
+  <Event>
+    <System>
+      <Provider Name="Microsoft-Windows-Security-Auditing"/>
+      <EventID>4625</EventID>
+    </System>
+    <EventData>
+      <Data Name="IpAddress">203.0.113.5</Data>
+      <Data Name="TargetUserName">admin</Data>
+    </EventData>
+  </Event>
+</Events>

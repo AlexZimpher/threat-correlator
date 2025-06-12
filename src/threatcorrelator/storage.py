@@ -1,15 +1,14 @@
 import os
 from datetime import datetime
-from sqlalchemy import create_engine, Column, String, Integer, DateTime, case
+from sqlalchemy import create_engine, Column, String, Integer, DateTime
 from sqlalchemy.orm import sessionmaker, declarative_base
-from sqlalchemy.ext.hybrid import hybrid_property
 
 # Ensure 'data' directory exists for SQLite
 os.makedirs("data", exist_ok=True)
 
 Base = declarative_base()
 
-def get_engine():
+def get_engine() -> 'Engine':
     """
     Create a SQLite engine.
     Uses TC_DB_PATH environment variable if set (for testing),
@@ -18,7 +17,7 @@ def get_engine():
     db_path = os.getenv("TC_DB_PATH", "sqlite:///data/iocs.db")
     return create_engine(db_path, echo=False)
 
-def get_session(db_url=None):
+def get_session(db_url: str = None) -> 'Session':
     """
     Initialize the database (creating tables if needed) and return a session.
     Accepts an optional db_url for test isolation.
@@ -32,13 +31,13 @@ class IOC(Base):
     """
     ORM model for a threat intelligence indicator (IP, domain, URL, hash, etc.).
     Fields:
-        - indicator: The IOC value (IP, domain, etc.)
-        - confidence: Confidence score
-        - country: Country code
-        - last_seen: Last seen timestamp
-        - usage: Usage type or context
-        - source: Source of the IOC
-        - type: IOC type (e.g. IPv4, domain, URL, hash)
+        indicator (str): The IOC value (IP, domain, etc.)
+        confidence (int): Confidence score
+        country (str): Country code
+        last_seen (datetime): Last seen timestamp
+        usage (str): Usage type or context
+        source (str): Source of the IOC
+        type (str): IOC type (e.g. IPv4, domain, URL, hash)
     """
     __tablename__ = "ioc_blacklist"
     indicator = Column(String, primary_key=True)  # IP, domain, etc.
@@ -48,23 +47,3 @@ class IOC(Base):
     usage = Column(String, nullable=True)
     source = Column(String, nullable=True)
     type = Column(String, nullable=True)  # e.g. IPv4, domain, URL, hash
-
-    @hybrid_property
-    def ip(self):
-        t = self.__dict__.get('type', None)
-        if isinstance(t, str):
-            return self.indicator if t == "ip" else None
-        return None
-    @ip.expression
-    def ip(cls):
-        return case((cls.type == "ip", cls.indicator), else_=None)
-
-    @hybrid_property
-    def domain(self):
-        t = self.__dict__.get('type', None)
-        if isinstance(t, str):
-            return self.indicator if t == "domain" else None
-        return None
-    @domain.expression
-    def domain(cls):
-        return case((cls.type == "domain", cls.indicator), else_=None)

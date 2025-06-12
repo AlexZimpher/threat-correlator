@@ -7,7 +7,7 @@ from pathlib import Path
 from datetime import datetime
 from threatcorrelator.logging_config import setup_logging
 from threatcorrelator.storage import get_session, IOC
-from threatcorrelator.fetch import fetch_abuseipdb_blacklist, fetch_otx_feed
+from threatcorrelator.fetch import fetch_abuseipdb_blacklist, fetch_otx_feed, fetch_static_malware_feed
 from threatcorrelator.correlate import correlate_logs
 
 setup_logging()
@@ -15,18 +15,18 @@ logger = logging.getLogger(__name__)
 CONFIG_PATH = Path(__file__).resolve().parents[2] / "config" / "config.yaml"
 
 @click.group()
-def cli():
+def cli() -> None:
     """Threat-Correlator CLI."""
     pass
 
 @cli.command()
-def greet():
+def greet() -> None:
     """Say hello to confirm CLI works."""
     logger.info("greet command invoked")
     click.echo("✅ Threat-Correlator CLI is working.")
 
 @cli.command()
-def show_config():
+def show_config() -> None:
     """Print contents of config.yaml."""
     try:
         with open(CONFIG_PATH, "r") as f:
@@ -44,11 +44,11 @@ def show_config():
     required=False,
     default="abuseipdb",
     show_default=True,
-    type=click.Choice(["abuseipdb", "otx", "both"]),
-    help="Which IOC source to fetch: abuseipdb, otx, or both",
+    type=click.Choice(["abuseipdb", "otx", "static", "both"]),
+    help="Which IOC source to fetch: abuseipdb, otx, static, or both",
 )
-def fetch(source):
-    """Fetch IOCs from AbuseIPDB and/or OTX, and store them."""
+def fetch(source: str) -> None:
+    """Fetch IOCs from AbuseIPDB, OTX, static feed, and store them."""
     all_iocs = []
     if source in ("abuseipdb", "both"):
         try:
@@ -64,6 +64,13 @@ def fetch(source):
             logger.info(f"Fetched {len(otx_iocs)} IOCs from OTX")
         except Exception as e:
             logger.error("Error fetching from OTX: %s", e)
+    if source in ("static", "both"):
+        try:
+            static_iocs = fetch_static_malware_feed()
+            all_iocs.extend(static_iocs)
+            logger.info(f"Fetched {len(static_iocs)} IOCs from static malware feed")
+        except Exception as e:
+            logger.error("Error fetching from static malware feed: %s", e)
     if not all_iocs:
         logger.warning("No IOCs fetched from any source.")
         click.echo("❌ No IOCs retrieved.")
@@ -110,7 +117,7 @@ def fetch(source):
         click.echo("❌ Failed to commit IOCs to database.")
 
 @cli.command()
-def count():
+def count() -> None:
     """Count number of IOCs in database."""
     try:
         session = get_session()
@@ -127,7 +134,11 @@ def correlate(logfile):
     """Correlate a JSON log file against stored IOCs."""
     logfile_path = Path(logfile)
     try:
-        results = correlate_logs(logfile_path)
+        # Use the same DB as fetch by respecting TC_DB_PATH
+        import os
+        db_url = os.getenv("TC_DB_PATH")
+        session = get_session(db_url) if db_url else get_session()
+        results = correlate_logs(logfile_path, session=session)
         click.echo(f"✅ Matched {len(results)} threats.")
         severity_counts = {"High": 0, "Medium": 0, "Low": 0}
         for r in results:
@@ -175,15 +186,14 @@ def export(logfile, output, min_confidence):
     try:
         with open(output_path, "w", newline="") as f:
             writer = csv.writer(f)
+            # Update CSV export columns
             writer.writerow([
-                "indicator", "ip", "confidence", "country", "country_name",
-                "last_seen", "usage", "source", "type", "severity",
-                "attack_technique_id", "attack_technique_name", "count_in_log"
+                "indicator", "confidence", "country", "country_name",
+                "last_seen", "usage", "source", "type", "severity", "attack_technique_id"
             ])
             for r in filtered:
                 writer.writerow([
                     r.get("indicator", ""),
-                    r.get("ip", ""),
                     r.get("confidence", ""),
                     r.get("country", ""),
                     r.get("country_name", ""),
@@ -193,8 +203,6 @@ def export(logfile, output, min_confidence):
                     r.get("type", ""),
                     r.get("severity", ""),
                     r.get("attack_technique_id", ""),
-                    r.get("attack_technique_name", ""),
-                    r.get("count_in_log", ""),
                 ])
         click.echo(f"✅ Exported {len(filtered)} threats to {output}")
     except Exception as e:

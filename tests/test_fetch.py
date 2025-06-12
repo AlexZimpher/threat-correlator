@@ -21,7 +21,6 @@ def test_fetch_abuseipdb_blacklist_parses_data(mock_get):
     iocs = fetch_abuseipdb_blacklist()
 
     assert isinstance(iocs, list)
-    assert iocs[0]["ip"] == "8.8.8.8"
     assert iocs[0]["indicator"] == "8.8.8.8"
     assert iocs[0]["confidence"] == 90
     assert iocs[0]["country"] == "US"

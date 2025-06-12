@@ -37,15 +37,33 @@ poetry install
    cp config/config.example.yaml config/config.yaml
    ```
 
-2. **Edit `config/config.yaml`** to include your AbuseIPDB API key:
+2. **Set your API keys as environment variables (recommended):**
+
+   ```bash
+   export ABUSEIPDB_API_KEY=your_abuseipdb_api_key
+   export OTX_API_KEY=your_otx_api_key
+   ```
+   Or on Windows PowerShell:
+   ```powershell
+   $env:ABUSEIPDB_API_KEY="your_abuseipdb_api_key"
+   $env:OTX_API_KEY="your_otx_api_key"
+   ```
+
+   The application will use these environment variables if set, otherwise it will fall back to the values in `config.yaml`.
+
+3. **Edit `config/config.yaml`** to adjust thresholds and endpoints as needed:
 
    ```yaml
    abuseipdb:
-     api_key: "your_api_key_here"  # 🔐 Replace with your actual key
+     api_key: "YOUR_ABUSEIPDB_API_KEY"  # Optional if using env var
      endpoint: "https://api.abuseipdb.com/api/v2/blacklist"
      confidence_threshold: 75
      max_age_in_days: 30
      limit: 10000
+
+   otx:
+     api_key: "YOUR_OTX_API_KEY"  # Optional if using env var
+     pulse_days: 7
 
    severity_thresholds:
      high: 80
@@ -65,6 +83,23 @@ poetry run threatcorrelator export output/results.csv     # Export results
 poetry run threatcorrelator show-config           # Show active configuration
 ```
 
+## Usage Examples
+
+### Fetch IOCs
+```bash
+threatcorrelator fetch --source abuseipdb
+```
+
+### Correlate Logs
+```bash
+threatcorrelator correlate --log data/test_logs.jsonl
+```
+
+### Launch Dashboard
+```bash
+threatcorrelator dashboard
+```
+
 ---
 
 ## 📊 Streamlit Dashboard
@@ -79,6 +114,10 @@ poetry run streamlit run src/threatcorrelator/dashboard.py
 - Upload log files
 - Visualize threat severity & country breakdown
 - Export results interactively
+
+## Screenshots
+
+![Dashboard Screenshot](docs/dashboard_screenshot.png)
 
 ---
 
@@ -127,6 +166,20 @@ poetry run pytest
 - `tests/test_fetch.py`: AbuseIPDB mock API tests
 
 ---
+
+## Badges
+
+![CI](https://github.com/yourusername/threat-correlator/actions/workflows/ci.yml/badge.svg)
+[![codecov](https://codecov.io/gh/yourusername/threat-correlator/branch/main/graph/badge.svg)](https://codecov.io/gh/yourusername/threat-correlator)
+
+---
+
+## Future Work
+- Integrate live passive DNS and threat intelligence APIs
+- Expand anomaly detection and multi-stage behavior logic
+- Add more log format support and enrichment
+- Improve dashboard visualizations and PDF export
+- Add more tests and coverage
 
 ---
 

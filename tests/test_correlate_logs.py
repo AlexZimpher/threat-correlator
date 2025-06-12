@@ -36,5 +36,5 @@ def test_correlate_logs_detects_known_threat():
 
     # Validate result
     assert len(results) == 1
-    assert results[0]["ip"] == "1.2.3.4"
+    assert results[0]["indicator"] == "1.2.3.4"
     assert results[0]["severity"] == "High"
