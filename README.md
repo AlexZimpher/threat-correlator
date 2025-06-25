@@ -51,6 +51,12 @@ poetry run streamlit run src/threatcorrelator/dashboard.py
 
 ---
 
+![IOC Overview](Images/IOC_Overview.png)
+![Log Correlation](Images/Log_Correlation.png)
+![MITRE ATT&CK Graph](Images/MITRE_ATT&CK_Graph.png)
+
+---
+
 ## Example Use Case
 
 - **Web Server Security:** Scan your Apache logs and instantly see if any visitors’ IPs are known malicious. Block and investigate as needed.
