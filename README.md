@@ -32,11 +32,6 @@ ThreatCorrelator follows a simple, modular pipeline:
 4. **Enrich & Classify**: Adds context (country, severity, MITRE tactic) to each detection.
 5. **Visualize & Export**: View results in the dashboard or export them for reporting.
 
-<!-- Mermaid or image diagram placeholder -->
-![System Architecture](docs/architecture_diagram.png)
-
-For more technical details, see [Architecture](docs/architecture.md).
-
 ---
 
 ## 🚀 Installation
