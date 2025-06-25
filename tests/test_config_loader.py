@@ -1,8 +1,8 @@
 import pytest
 from threatcorrelator.config_loader import load_config
 
-def test_load_config_example():
-    config = load_config("config/config.example.yaml")
+def test_load_config():
+    config = load_config("config/config.yaml")
     assert "abuseipdb" in config
     assert "otx" in config
 
