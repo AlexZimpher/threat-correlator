@@ -1,7 +1,7 @@
 
 # 🔐 ThreatCorrelator
 
-**ThreatCorrelator** instantly spots known malicious actors in your logs by correlating them with real-time threat intelligence feeds. No security expertise required—just point it at your logs and get clear, actionable results.
+**Threat-Correlator** instantly spots known malicious actors in your logs by correlating them with real-time threat intelligence feeds. No security expertise required, just point it at your logs and get clear, actionable results.
 
 ---
 
@@ -13,7 +13,7 @@ This project was built to showcase my ability to design, implement, and document
 - Secure handling of API keys and configuration
 - Modular architecture and extensibility
 - Real-world data parsing, enrichment, and correlation
-- Clear, recruiter-friendly code and documentation
+- Clear, reader-friendly code and documentation
 
 ---
 
@@ -24,7 +24,7 @@ poetry install
 poetry run streamlit run src/threatcorrelator/dashboard.py
 ```
 
-*Sample logs and config are included for instant demo—no API keys needed for basic testing!*
+*Sample logs and config are included for instant demo*
 
 ---
 
@@ -39,19 +39,15 @@ poetry run streamlit run src/threatcorrelator/dashboard.py
 
 ---
 
-## Architecture
+## Architecture & How It Works
 
 ```text
 ┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
-│  Threat Feeds│ → │   Database   │ → │   Correlator  │ → │  Enrichment   │ → │ Dashboard/CLI │
+│ Threat Feeds │ →  │   Database   │ →  │  Correlator  │ →  │  Enrichment  │ →  │  Dashboard   │
 └──────────────┘    └──────────────┘    └──────────────┘    └──────────────┘    └──────────────┘
 ```
 
----
-
-## How It Works
-
-1. **Fetch Threat Feeds** → 2. **Store in Local DB** → 3. **Correlate with Your Logs** → 4. **Enrich & Classify** → 5. **Visualize & Export**
+**Fetch Threat Feeds** → **Store in Local DB** → **Correlate with Your Logs** → **Enrich & Classify** → **Visualize & Export**
 
 ---
 
