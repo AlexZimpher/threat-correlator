@@ -17,17 +17,6 @@ This project was built to showcase my ability to design, implement, and document
 
 ---
 
-## 🚀 Quick Start
-
-```bash
-poetry install
-poetry run streamlit run src/threatcorrelator/dashboard.py
-```
-
-*Sample logs and config are included for instant demo*
-
----
-
 ## Features
 
 - **Multi-Source Threat Feeds:** Checks your logs against AbuseIPDB, AlienVault OTX, and more
@@ -50,6 +39,7 @@ poetry run streamlit run src/threatcorrelator/dashboard.py
 **Fetch Threat Feeds** → **Store in Local DB** → **Correlate with Your Logs** → **Enrich & Classify** → **Visualize & Export**
 
 ---
+## Dashboard Screenshots
 
 ![IOC Overview](Images/IOC_Overview.png)
 ![Log Correlation](Images/Log_Correlation.png)
@@ -60,6 +50,17 @@ poetry run streamlit run src/threatcorrelator/dashboard.py
 ## Example Use Case
 
 - **Web Server Security:** Scan your Apache logs and instantly see if any visitors’ IPs are known malicious. Block and investigate as needed.
+
+---
+
+## Quick Start
+
+```bash
+poetry install
+poetry run streamlit run src/threatcorrelator/dashboard.py
+```
+
+*Sample logs and config are included for instant demo*
 
 ---
 
