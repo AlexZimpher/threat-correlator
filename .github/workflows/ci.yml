@@ -28,8 +28,8 @@ jobs:
       - name: Install dependencies
         run: poetry install --with dev
 
-      - name: Run tests
-        run: poetry run pytest
+      - name: Run tests with coverage
+        run: poetry run pytest --cov=src --cov-report=xml
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5

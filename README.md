@@ -3,27 +3,11 @@
 ![CI](https://github.com/AlexZimpher/threat-correlator/actions/workflows/ci.yml/badge.svg)
 [![codecov](https://codecov.io/gh/AlexZimpher/threat-correlator/branch/main/graph/badge.svg)](https://codecov.io/gh/AlexZimpher/threat-correlator)
 
-ThreatCorrelator helps you quickly identify known malicious actors in your log files by correlating them with threat intelligence feeds. Whether you’re a security analyst, system administrator, or just curious, ThreatCorrelator makes it easy to spot threats and understand their context—all with a simple interface and clear visualizations.
-
-**Why it matters:**
-- Instantly see if your systems have interacted with known bad actors.
-- Get clear, actionable threat context and severity ratings.
-- No security expertise required—just point it at your logs and see results.
+**ThreatCorrelator** helps you instantly spot known malicious actors in your log files by correlating them with up-to-date threat intelligence feeds. No security expertise required—just point it at your logs and get clear, actionable results.
 
 ---
 
-## Features
-
-- 🎯 **Multi-Source IOC Fetch**: Pulls malicious IPs/domains from sources like AbuseIPDB and AlienVault OTX.
-- 🕵️ **IP & Domain Correlation**: Scans your logs for matches to known threats.
-- 🛡️ **MITRE ATT&CK Mapping**: Tags each threat with a known tactic/technique.
-- ⚠️ **Critical Severity**: Flags repeated or high-confidence threats as “Critical.”
-- 🌍 **Country Resolution**: Shows the country of origin for each threat.
-- 💻 **Streamlit Dashboard**: Visualize, filter, and download results interactively.
-
----
-
-## Quick Start
+## 🚀 Quick Start
 
 ```bash
 poetry install
@@ -31,6 +15,16 @@ poetry run streamlit run src/threatcorrelator/dashboard.py
 ```
 
 *Sample logs and config are included for instant demo—no API keys needed for basic testing!*
+
+---
+
+## Features
+
+- **Multi-Source Threat Feeds:** Checks your logs against AbuseIPDB, AlienVault OTX, and more.
+- **IOC Correlation:** Finds both IP and domain matches in your logs.
+- **MITRE ATT&CK Mapping:** Tags each threat with a known tactic/technique.
+- **Severity & Country Context:** Flags critical threats and shows their origin.
+- **Interactive Dashboard:** Visualize, filter, and download results easily.
 
 ---
 
@@ -53,6 +47,4 @@ poetry run streamlit run src/threatcorrelator/dashboard.py
 
 ---
 
-## Author
-
-[Alexander Zimpher](https://github.com/AlexZimpher)
+**Author:** [Alexander Zimpher](https://github.com/AlexZimpher)
