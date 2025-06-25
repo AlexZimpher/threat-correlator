@@ -39,17 +39,13 @@ poetry run streamlit run src/threatcorrelator/dashboard.py
 
 ---
 
-## Architecture
+## Architecture & How It Works
 
 ```text
 ┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
 │ Threat Feeds │ →  │   Database   │ →  │  Correlator  │ →  │  Enrichment  │ →  │  Dashboard   │
 └──────────────┘    └──────────────┘    └──────────────┘    └──────────────┘    └──────────────┘
 ```
-
----
-
-## How It Works
 
 **Fetch Threat Feeds** → **Store in Local DB** → **Correlate with Your Logs** → **Enrich & Classify** → **Visualize & Export**
 
