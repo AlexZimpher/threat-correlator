@@ -117,3 +117,15 @@ def fetch_static_malware_feed(path: str = "data/static_malware_feed.json") -> li
     except Exception as e:
         logger.error(f"Failed to load static malware feed: {e}")
         return []
+
+def fetch_virustotal(api_key: Optional[str] = None) -> List[dict]:
+    """
+    Fetch IOCs from VirusTotal Public API (scaffold).
+    Returns a list of dicts with keys: indicator, confidence, country, last_seen, usage, source, type.
+    API key is loaded from environment variable VIRUSTOTAL_API_KEY if not provided.
+    
+    Example usage:
+        iocs = fetch_virustotal()
+    """
+    # TODO: Implement API call and parsing logic
+    return []

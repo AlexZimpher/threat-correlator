@@ -6,13 +6,15 @@ authors = [
     { name = "Alexander Zimpher", email = "alexanderzimpher@gmail.com" }
 ]
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<4.0"
 dependencies = [
     "click>=8.2.1,<9.0.0",
     "requests>=2.32.3,<3.0.0",
     "pyyaml>=6.0.2,<7.0.0",
     "sqlalchemy>=2.0.0,<3.0.0",
-    "otxv2 (>=1.5.12,<2.0.0)"
+    "otxv2 (>=1.5.12,<2.0.0)",
+    "pdfkit (>=1.0.0,<2.0.0)",
+    "reportlab (>=4.0.0,<5.0.0)"
 ]
 
 [build-system]

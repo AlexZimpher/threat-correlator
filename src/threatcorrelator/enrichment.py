@@ -62,7 +62,15 @@ def enrich_reverse_dns(indicator: str) -> Dict:
 def enrich_passive_dns(indicator: str) -> Dict:
     """Stub for passive DNS enrichment."""
     # In production, integrate with a real passive DNS API
-    return {}
+    result = {}
+    # Passive DNS enrichment (stub, can be replaced with real API)
+    # Example: use SecurityTrails, Farsight, or open API if available
+    # For now, just return a fake result for demonstration
+    if indicator.endswith('.example.com'):
+        result["passive_dns"] = [
+            {"first_seen": "2025-01-01", "last_seen": "2025-06-01", "resolve": indicator}
+        ]
+    return result
 
 def enrich_indicator(indicator: str, geoip_db_path: Optional[str] = None) -> Dict:
     """Aggregate enrichment for an indicator."""
