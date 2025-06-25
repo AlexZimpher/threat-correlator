@@ -3,7 +3,7 @@
 ![CI](https://github.com/AlexZimpher/threat-correlator/actions/workflows/ci.yml/badge.svg)
 [![codecov](https://codecov.io/gh/AlexZimpher/threat-correlator/graph/badge.svg?token=YZ0K214VR8)](https://codecov.io/gh/AlexZimpher/threat-correlator)
 
-**ThreatCorrelator** helps you instantly spot known malicious actors in your log files by correlating them with up-to-date threat intelligence feeds. No security expertise required—just point it at your logs and get clear, actionable results.
+**ThreatCorrelator** instantly spots known malicious actors in your logs by correlating them with real-time threat intelligence feeds. No security expertise required—just point it at your logs and get clear, actionable results.
 
 ---
 
@@ -22,7 +22,7 @@ poetry run streamlit run src/threatcorrelator/dashboard.py
 
 - **Multi-Source Threat Feeds:** Checks your logs against AbuseIPDB, AlienVault OTX, and more.
 - **IOC Correlation:** Finds both IP and domain matches in your logs.
-- **MITRE ATT&CK Mapping:** Tags each threat with a known tactic/technique.
+- **MITRE ATT&CK Mapping:** Tags each threat with a known tactic/technique for context.
 - **Severity & Country Context:** Flags critical threats and shows their origin.
 - **Interactive Dashboard:** Visualize, filter, and download results easily.
 
@@ -37,6 +37,13 @@ poetry run streamlit run src/threatcorrelator/dashboard.py
 ## Example Use Case
 
 - **Web Server Security:** Scan your Apache logs and instantly see if any visitors’ IPs are known malicious. Block and investigate as needed.
+
+---
+
+## Screenshots
+
+![Dashboard Overview](docs/dashboard_screenshot.png)
+*Dashboard showing threat breakdown and visualizations.*
 
 ---
 

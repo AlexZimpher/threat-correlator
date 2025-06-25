@@ -210,5 +210,7 @@ def export(logfile, output, min_confidence):
         click.echo(f"❌ Export failed: {e}")
         sys.exit(1)
 
+main = cli
+
 if __name__ == "__main__":
     cli()
