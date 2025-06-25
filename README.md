@@ -1,7 +1,7 @@
 # 🔐 ThreatCorrelator
 
 ![CI](https://github.com/AlexZimpher/threat-correlator/actions/workflows/ci.yml/badge.svg)
-[![codecov](https://codecov.io/gh/AlexZimpher/threat-correlator/graph/badge.svg?token=YZ0K214VR8)](https://codecov.io/gh/AlexZimpher/threat-correlator)
+[![codecov](https://codecov.io/gh/AlexZimpher/threat-correlator/branch/main/graph/badge.svg)](https://codecov.io/gh/AlexZimpher/threat-correlator)
 
 **ThreatCorrelator** helps you instantly spot known malicious actors in your log files by correlating them with up-to-date threat intelligence feeds. No security expertise required—just point it at your logs and get clear, actionable results.
 
