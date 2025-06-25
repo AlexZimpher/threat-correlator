@@ -1,12 +1,12 @@
 abuseipdb:
-  api_key: "PLACEHOLDER"
+  api_key: "d88cc41fb3bb42b3731ac82716787e3b533035fb43bad34eedcd7f005f312e828eea102906433b99"
   endpoint: "https://api.abuseipdb.com/api/v2/blacklist"
   confidence_threshold: 75
   max_age_in_days: 30
   limit: 10000
 
 otx:
-  api_key: "PLACEHOLDER"
+  api_key: "afaf36015e2a0baa57b4847855408b467b1642ceba9fd96ecd77461dc055084d"
   pulse_days: 7
 
 severity_thresholds:
