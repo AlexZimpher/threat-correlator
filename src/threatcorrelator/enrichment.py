@@ -1,13 +1,13 @@
+
 """
-Enrichment utilities for indicators (IP, domain, etc.):
-- GeoIP (country, city)
-- ASN lookup
-- Reverse DNS
-- Passive DNS (stub)
+Enrichment utilities for indicators (IP, domain, etc.).
+Each function is robust, fails gracefully, and is clearly commented for maintainability.
 """
-import os
+
+
 from typing import Optional, Dict
 
+# GeoIP2 and IPWhois are optional dependencies for enrichment.
 try:
     import geoip2.database
 except ImportError:
@@ -20,9 +20,11 @@ except ImportError:
 
 import socket
 
-
 def enrich_geoip(indicator: str, geoip_db_path: Optional[str] = None) -> Dict:
-    """Return GeoIP info for an IP address (country, city)."""
+    """
+    Return GeoIP info for an IP address (country, city, lat/lon).
+    Returns empty dict if geoip2 is not available or DB path is not provided.
+    """
     if geoip2 is None or geoip_db_path is None:
         return {}
     try:
@@ -38,7 +40,10 @@ def enrich_geoip(indicator: str, geoip_db_path: Optional[str] = None) -> Dict:
         return {}
 
 def enrich_asn(indicator: str) -> Dict:
-    """Return ASN info for an IP address."""
+    """
+    Return ASN info for an IP address (autonomous system number and description).
+    Returns empty dict if ipwhois is not available.
+    """
     if IPWhois is None:
         return {}
     try:
@@ -52,7 +57,10 @@ def enrich_asn(indicator: str) -> Dict:
         return {}
 
 def enrich_reverse_dns(indicator: str) -> Dict:
-    """Return reverse DNS for an IP address."""
+    """
+    Return reverse DNS for an IP address.
+    Returns empty dict if lookup fails.
+    """
     try:
         host = socket.gethostbyaddr(indicator)[0]
         return {"reverse_dns": host}
@@ -60,12 +68,12 @@ def enrich_reverse_dns(indicator: str) -> Dict:
         return {}
 
 def enrich_passive_dns(indicator: str) -> Dict:
-    """Stub for passive DNS enrichment."""
-    # In production, integrate with a real passive DNS API
+    """
+    (Stub) Passive DNS enrichment.
+    In production, integrate with a real passive DNS API (e.g., SecurityTrails, Farsight).
+    For demo, returns a fake result for .example.com domains only.
+    """
     result = {}
-    # Passive DNS enrichment (stub, can be replaced with real API)
-    # Example: use SecurityTrails, Farsight, or open API if available
-    # For now, just return a fake result for demonstration
     if indicator.endswith('.example.com'):
         result["passive_dns"] = [
             {"first_seen": "2025-01-01", "last_seen": "2025-06-01", "resolve": indicator}
@@ -73,7 +81,10 @@ def enrich_passive_dns(indicator: str) -> Dict:
     return result
 
 def enrich_indicator(indicator: str, geoip_db_path: Optional[str] = None) -> Dict:
-    """Aggregate enrichment for an indicator."""
+    """
+    Aggregate enrichment for an indicator (IP/domain).
+    Returns a merged dict of all enrichment results.
+    """
     result = {}
     result.update(enrich_geoip(indicator, geoip_db_path))
     result.update(enrich_asn(indicator))

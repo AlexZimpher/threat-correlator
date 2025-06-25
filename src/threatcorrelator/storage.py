@@ -1,23 +1,26 @@
 import os
-from datetime import datetime
+
+# Database storage and ORM model for ThreatCorrelator.
+# Secure, robust, and clearly commented for maintainability.
+
+
 from sqlalchemy import create_engine, Column, String, Integer, DateTime
 from sqlalchemy.orm import sessionmaker, declarative_base
-
-# Ensure 'data' directory exists for SQLite
-os.makedirs("data", exist_ok=True)
+from sqlalchemy.engine import Engine
+from sqlalchemy.orm import Session
 
 Base = declarative_base()
 
-def get_engine() -> 'Engine':
+def get_engine() -> Engine:
     """
-    Create a SQLite engine.
+    Create a SQLAlchemy engine for the IOC database.
     Uses TC_DB_PATH environment variable if set (for testing),
     otherwise defaults to 'sqlite:///data/iocs.db'.
     """
     db_path = os.getenv("TC_DB_PATH", "sqlite:///data/iocs.db")
     return create_engine(db_path, echo=False)
 
-def get_session(db_url: str = None) -> 'Session':
+def get_session(db_url: str | None = None) -> Session:
     """
     Initialize the database (creating tables if needed) and return a session.
     Accepts an optional db_url for test isolation.

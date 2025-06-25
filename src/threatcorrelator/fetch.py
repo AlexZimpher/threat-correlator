@@ -1,3 +1,7 @@
+
+# Threat intelligence feed fetchers for AbuseIPDB, OTX, and static demo feeds.
+# All functions are designed to be safe, robust, and easy to extend.
+
 import os
 import requests
 import logging
@@ -9,22 +13,17 @@ from threatcorrelator.config_loader import load_config
 logger = logging.getLogger(__name__)
 config = load_config()
 
-__all__ = ["fetch_abuseipdb_blacklist", "fetch_otx_feed", "fetch_static_malware_feed"]
+__all__ = ["fetch_abuseipdb_blacklist", "fetch_otx_feed", "fetch_static_malware_feed", "fetch_virustotal"]
 
 def fetch_abuseipdb_blacklist(api_key: Optional[str] = None) -> List[dict]:
     """
-    Fetch IOCs from AbuseIPDB. Returns a list of dicts with keys:
-    indicator, confidence, country, last_seen, usage, source, type
+    Fetch IOCs from AbuseIPDB.
+    Returns a list of dicts: indicator, confidence, country, last_seen, usage, source, type.
     API key is loaded from environment variable ABUSEIPDB_API_KEY if not provided.
-
-    :param api_key: Optional API key for AbuseIPDB. If not provided, the function
-                    will attempt to retrieve it from the environment variable
-                    'ABUSEIPDB_API_KEY' or from the config file.
-    :return: A list of dictionaries containing the IOCs and their associated data.
     """
     if api_key is None:
-        api_key = os.environ.get("ABUSEIPDB_API_KEY") or config["abuseipdb"]["api_key"]
-    url = config["abuseipdb"]["endpoint"]
+        api_key = os.environ.get("ABUSEIPDB_API_KEY") or config["abuseipdb"].get("api_key")
+    url = config["abuseipdb"].get("endpoint")
     headers = {"Key": api_key, "Accept": "application/json"}
     params = {
         "confidenceMinimum": config["abuseipdb"].get("confidence_threshold", 90),
@@ -54,15 +53,12 @@ def fetch_abuseipdb_blacklist(api_key: Optional[str] = None) -> List[dict]:
 
 def fetch_otx_feed() -> List[dict]:
     """
-    Fetch IOCs from AlienVault OTX. Returns a list of dicts with keys:
-    indicator, confidence, country, last_seen, usage, source, type
+    Fetch IOCs from AlienVault OTX.
+    Returns a list of dicts: indicator, confidence, country, last_seen, usage, source, type.
     API key is loaded from environment variable OTX_API_KEY if not provided.
-
-    :return: A list of dictionaries containing the IOCs and their associated data
-             from the AlienVault OTX.
     """
     try:
-        api_key = os.environ.get("OTX_API_KEY") or config["otx"]["api_key"]
+        api_key = os.environ.get("OTX_API_KEY") or config["otx"].get("api_key")
         days = config["otx"].get("pulse_days", 7)
         otx = OTXv2(api_key)
         since = (datetime.utcnow() - timedelta(days=days)).isoformat()
@@ -108,7 +104,7 @@ def fetch_otx_feed() -> List[dict]:
 
 def fetch_static_malware_feed(path: str = "data/static_malware_feed.json") -> list[dict]:
     """
-    Fetch IOCs from a static local JSON file for demonstration.
+    Fetch IOCs from a static local JSON file for demonstration/testing.
     """
     import json
     try:
@@ -120,12 +116,10 @@ def fetch_static_malware_feed(path: str = "data/static_malware_feed.json") -> li
 
 def fetch_virustotal(api_key: Optional[str] = None) -> List[dict]:
     """
-    Fetch IOCs from VirusTotal Public API (scaffold).
-    Returns a list of dicts with keys: indicator, confidence, country, last_seen, usage, source, type.
+    (Stub) Fetch IOCs from VirusTotal Public API.
+    Not implemented for demo purposes. Returns an empty list.
     API key is loaded from environment variable VIRUSTOTAL_API_KEY if not provided.
-    
-    Example usage:
-        iocs = fetch_virustotal()
     """
-    # TODO: Implement API call and parsing logic
+    logger.info("fetch_virustotal is a stub and not implemented in this demo version.")
+    return []
     return []
