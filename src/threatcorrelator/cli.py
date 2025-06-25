@@ -101,8 +101,8 @@ def fetch(source: str) -> None:
             )
             session.add(obj)
             added += 1
-            source = obj.source
-            source_counts[source] = source_counts.get(source, 0) + 1
+            source_val = ioc_data.get("source", "unknown")
+            source_counts[source_val] = source_counts.get(source_val, 0) + 1
         except Exception as e:
             logger.warning("Error processing IOC %s: %s", indicator, e)
             continue
