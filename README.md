@@ -9,26 +9,6 @@ ThreatCorrelator helps you quickly identify known malicious actors in your log f
 
 ---
 
-## Table of Contents
-- [Features](#features)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [CLI Usage](#cli-usage)
-- [Streamlit Dashboard](#streamlit-dashboard)
-- [Screenshots & Diagrams](#screenshots--diagrams)
-- [Export Example](#export-example)
-- [Project Structure](#project-structure)
-- [Testing](#testing)
-- [Use Cases](#use-cases)
-- [How It Works](#how-it-works)
-- [Badges](#badges)
-- [Future Work](#future-work)
-- [License](#license)
-- [Author](#author)
-- [Demo & Example Logs](#demo--example-logs)
-
----
-
 ## Features
 
 - 🎯 **Multi-Source IOC Fetch**: Pulls malicious IPs/domains from multiple sources (e.g., AbuseIPDB, AlienVault OTX). *Lets you check your logs against the latest threat intelligence.*
@@ -212,13 +192,6 @@ You can try ThreatCorrelator with sample data in just one command—no setup req
 poetry run streamlit run src/threatcorrelator/dashboard.py
 ```
 
-Or, using Docker (if you prefer):
-
-```bash
-docker build -t threatcorrelator .
-docker run -p 8501:8501 -v %cd%:/app threatcorrelator
-```
-
 *Sample logs and a pre-filled config are included for instant demo—no API keys needed for basic testing!*
 
 ---
@@ -245,9 +218,7 @@ If you don’t provide API keys, the dashboard will load the sample threat list 
   export ABUSEIPDB_API_KEY=your_abuseipdb_api_key
   export OTX_API_KEY=your_otx_api_key
   ```
-
-If you use Docker, mount your config and logs as volumes for full functionality.
-
+  
 ---
 
 ## 📂 Project Structure
@@ -282,8 +253,8 @@ poetry run pytest
 
 ## Badges
 
-![CI](https://github.com/yourusername/threat-correlator/actions/workflows/ci.yml/badge.svg)
-[![codecov](https://codecov.io/gh/yourusername/threat-correlator/branch/main/graph/badge.svg)](https://codecov.io/gh/yourusername/threat-correlator)
+![CI](https://github.com/AlexZimpher/threat-correlator/actions/workflows/ci.yml/badge.svg)
+[![codecov](https://codecov.io/gh/AlexZimpher/threat-correlator/branch/main/graph/badge.svg)](https://codecov.io/gh/AlexZimpher/threat-correlator)
 
 ---
 
@@ -297,20 +268,11 @@ poetry run pytest
 - ML-based anomaly detection
 - SIEM/Splunk/ELK connectors
 
-*Have an idea or want to contribute? Open an issue or PR!*
-
----
-
-## 📝 License
-
-[MIT License](LICENSE)
-
 ---
 
 ## 👤 Author
 
 **Alexander Zimpher**  
-Cybersecurity Student @ WWU  
 [https://github.com/AlexZimpher](https://github.com/AlexZimpher)
 
 ---
@@ -410,6 +372,3 @@ ThreatCorrelator is designed to easily integrate new threat intelligence feeds. 
       pass
   ```
 - Document new API keys or config options in your config file as needed.
-
-*Want to contribute a new feed? See the code comments in `fetch.py` for guidance!*
-
