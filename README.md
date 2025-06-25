@@ -1,5 +1,10 @@
 
-# 🔐 ThreatCorrelator
+# ThreatCorrelator
+
+[![Build Status](https://github.com/AlexZimpher/threat-correlator/actions/workflows/ci.yml/badge.svg)](https://github.com/AlexZimpher/threat-correlator/actions/workflows/ci.yml)
+![Python](https://img.shields.io/badge/python-3.11-blue.svg)
+![Built with Poetry](https://img.shields.io/badge/Built%20with-Poetry-612C63.svg?logo=python&logoColor=white)
+[![codecov](https://codecov.io/github/AlexZimpher/threat-correlator/graph/badge.svg?token=YZ0K214VR8)](https://codecov.io/github/AlexZimpher/threat-correlator)
 
 **Threat-Correlator** instantly spots known malicious actors in your logs by correlating them with real-time threat intelligence feeds. No security expertise required, just point it at your logs and get clear, actionable results.
 
