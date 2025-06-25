@@ -1,6 +1,0 @@
-# requirements-extra.txt
-# Additional dependencies for enrichment and PDF export
-geoip2
-ipwhois
-pdfkit
-reportlab
