@@ -57,13 +57,6 @@ poetry run streamlit run src/threatcorrelator/dashboard.py
 
 ---
 
-## Screenshots
-
-![Dashboard Overview](docs/dashboard_screenshot.png)
-*Dashboard showing threat breakdown and visualizations.*
-
----
-
 ## Extending & Customizing
 
 - Add new threat feeds by implementing a fetcher in `src/threatcorrelator/fetch.py`
