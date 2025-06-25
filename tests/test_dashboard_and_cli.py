@@ -20,7 +20,7 @@ def test_cli_greet():
     assert "Threat-Correlator CLI is working" in result.output
 
 def test_fetch_static_malware_feed():
-    iocs = fetch_static_malware_feed()
+    iocs = fetch_static_malware_feed("sampledata/static_malware_feed.json")
     assert isinstance(iocs, list)
 
 def test_fetch_virustotal_stub():

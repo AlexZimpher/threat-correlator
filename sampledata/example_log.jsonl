@@ -1,0 +1,2 @@
+{"src_ip": "8.8.8.8", "event_type": "alert", "user": "alice"}
+{"src_ip": "1.2.3.4", "event_type": "info", "user": "bob"}

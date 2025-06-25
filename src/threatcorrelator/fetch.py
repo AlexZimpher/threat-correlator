@@ -102,7 +102,7 @@ def fetch_otx_feed() -> List[dict]:
             iocs.append(ioc)
     return iocs
 
-def fetch_static_malware_feed(path: str = "data/static_malware_feed.json") -> list[dict]:
+def fetch_static_malware_feed(path: str = "sampledata/static_malware_feed.json") -> list[dict]:
     """
     Fetch IOCs from a static local JSON file for demonstration/testing.
     """

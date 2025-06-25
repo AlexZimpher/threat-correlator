@@ -1,0 +1,9 @@
+<Events>
+  <Event>
+    <System><Provider Name="Microsoft-Windows-Security-Auditing"/></System>
+    <EventData>
+      <Data Name="IpAddress">8.8.8.8</Data>
+      <Data Name="TargetUserName">alice</Data>
+    </EventData>
+  </Event>
+</Events>

@@ -1,0 +1,2 @@
+{"src_ip": "8.8.8.8", "event_type": "alert"}
+{"src_ip": "malicious.example.com", "event_type": "alert"}

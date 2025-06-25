@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 from threatcorrelator.storage import get_session, IOC
 
-def generate_test_log(output_path="data/test_logs.jsonl", ioc_count=10, false_positive_count=5):
+def generate_test_log(output_path="sampledata/test_logs.jsonl", ioc_count=10, false_positive_count=5):
     session = get_session()
     iocs = session.query(IOC).limit(ioc_count).all()
 

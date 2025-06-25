@@ -15,9 +15,9 @@ def get_engine() -> Engine:
     """
     Create a SQLAlchemy engine for the IOC database.
     Uses TC_DB_PATH environment variable if set (for testing),
-    otherwise defaults to 'sqlite:///data/iocs.db'.
+    otherwise defaults to 'sqlite:///sampledata/iocs.db'.
     """
-    db_path = os.getenv("TC_DB_PATH", "sqlite:///data/iocs.db")
+    db_path = os.getenv("TC_DB_PATH", "sqlite:///sampledata/iocs.db")
     return create_engine(db_path, echo=False)
 
 def get_session(db_url: str | None = None) -> Session:
