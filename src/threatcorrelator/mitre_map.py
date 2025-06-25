@@ -34,3 +34,7 @@ def dynamic_mitre_mapping(indicator: str, usage: Optional[str] = None, context: 
     # In production, expand with more logic
     return MITRE_MAPPING["__default__"]
 
+def map_usage_to_mitre(usage: str):
+    """Return MITRE tactic and technique for a given usage string."""
+    return MITRE_MAPPING.get(usage, MITRE_MAPPING["__default__"])
+

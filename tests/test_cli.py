@@ -1,5 +1,5 @@
 from click.testing import CliRunner
-from threatcorrelator.cli import main
+from threatcorrelator.cli import cli as main
 
 def test_cli_show_config():
     runner = CliRunner()
