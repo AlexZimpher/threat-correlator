@@ -1,9 +1,7 @@
-
 """
 Enrichment utilities for indicators (IP, domain, etc.).
 Each function is robust, fails gracefully, and is clearly commented for maintainability.
 """
-
 
 from typing import Optional, Dict
 
@@ -19,6 +17,7 @@ except ImportError:
     IPWhois = None
 
 import socket
+
 
 def enrich_geoip(indicator: str, geoip_db_path: Optional[str] = None) -> Dict:
     """
@@ -39,6 +38,7 @@ def enrich_geoip(indicator: str, geoip_db_path: Optional[str] = None) -> Dict:
     except Exception:
         return {}
 
+
 def enrich_asn(indicator: str) -> Dict:
     """
     Return ASN info for an IP address (autonomous system number and description).
@@ -56,6 +56,7 @@ def enrich_asn(indicator: str) -> Dict:
     except Exception:
         return {}
 
+
 def enrich_reverse_dns(indicator: str) -> Dict:
     """
     Return reverse DNS for an IP address.
@@ -67,6 +68,7 @@ def enrich_reverse_dns(indicator: str) -> Dict:
     except Exception:
         return {}
 
+
 def enrich_passive_dns(indicator: str) -> Dict:
     """
     (Stub) Passive DNS enrichment.
@@ -74,11 +76,16 @@ def enrich_passive_dns(indicator: str) -> Dict:
     For demo, returns a fake result for .example.com domains only.
     """
     result = {}
-    if indicator.endswith('.example.com'):
+    if indicator.endswith(".example.com"):
         result["passive_dns"] = [
-            {"first_seen": "2025-01-01", "last_seen": "2025-06-01", "resolve": indicator}
+            {
+                "first_seen": "2025-01-01",
+                "last_seen": "2025-06-01",
+                "resolve": indicator,
+            }
         ]
     return result
+
 
 def enrich_indicator(indicator: str, geoip_db_path: Optional[str] = None) -> Dict:
     """

@@ -21,6 +21,7 @@ venv/
 
 # Ignore config and secrets
 config/config.yaml
+config/config.local.yaml
 
 # Ignore Jupyter and notebook checkpoints
 .ipynb_checkpoints/

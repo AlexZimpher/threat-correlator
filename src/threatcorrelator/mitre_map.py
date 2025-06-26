@@ -1,9 +1,7 @@
-# src/threatcorrelator/mitre_map.py
+# MITRE ATT&CK technique mappings for IOC usage/behavior.
+# Maps common protocols, attack types, and indicators to MITRE technique IDs and names.
+from typing import Optional
 
-"""
-MITRE ATT&CK mappings for IOC usage/behavior → technique ID and name.
-"""
-# Comprehensive MITRE ATT&CK mapping
 MITRE_MAPPING = {
     # Network protocols and services
     "SSH": ("T1110", "Brute Force"),
@@ -53,9 +51,10 @@ MITRE_MAPPING = {
     "__default__": ("T1566", "Phishing"),
 }
 
-from typing import Optional
 
-def dynamic_mitre_mapping(indicator: str, usage: Optional[str] = None, context: Optional[dict] = None):
+def dynamic_mitre_mapping(
+    indicator: str, usage: Optional[str] = None, context: Optional[dict] = None
+):
     """
     Dynamically map an indicator to a MITRE ATT&CK technique based on usage or context.
     """
@@ -78,7 +77,7 @@ def dynamic_mitre_mapping(indicator: str, usage: Optional[str] = None, context: 
     # Use context (stub)
     return MITRE_MAPPING["__default__"]
 
+
 def map_usage_to_mitre(usage: str):
     """Return MITRE tactic and technique for a given usage string."""
     return MITRE_MAPPING.get(usage, MITRE_MAPPING["__default__"])
-

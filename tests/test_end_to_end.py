@@ -1,46 +1,31 @@
-import os
 import json
 import yaml
 import pytest
-
-from pathlib import Path
 from click.testing import CliRunner
 
 # Import CLI and modules
 from threatcorrelator.cli import cli
 import threatcorrelator.fetch as fetch_module
 import threatcorrelator.cli as cli_module
-from threatcorrelator.storage import Base, get_engine, get_session
+from threatcorrelator.storage import Base, get_engine
 from threatcorrelator.correlate import correlate_logs
 
 
 @pytest.fixture(autouse=True)
 def use_temp_db(tmp_path, monkeypatch):
-    """
-    Override the SQLite database to use a temp file.
-    Recreate tables fresh for each test.
-    """
+    # Use a temporary SQLite database for each test and clean up after
     db_file = tmp_path / "test_tc.db"
-    # Ensure get_engine() uses this path:
     monkeypatch.setenv("TC_DB_PATH", f"sqlite:///{db_file}")
-
-    # Create engine and initialize tables
     engine = get_engine()
     Base.metadata.create_all(engine)
-
     yield
-
-    # Teardown
     engine.dispose()
     monkeypatch.delenv("TC_DB_PATH", raising=False)
 
 
 @pytest.fixture(autouse=True)
 def patch_fetch(monkeypatch):
-    """
-    Monkeypatch fetch functions so they return exactly one IOC.
-    Also patch CLI’s direct references.
-    """
+    # Patch fetch functions to always return a fixed IOC for testing
     fixed_ioc = {
         "indicator": "203.0.113.5",
         "confidence": 95,
@@ -57,13 +42,26 @@ def patch_fetch(monkeypatch):
     def fake_fetch_otx():
         return []
 
-    # Patch in fetch module
-    monkeypatch.setattr(fetch_module, "fetch_abuseipdb_blacklist", fake_fetch_abuseipdb)
-    monkeypatch.setattr(fetch_module, "fetch_otx_feed", fake_fetch_otx)
-
-    # Also patch the CLI’s imported references
-    monkeypatch.setattr(cli_module, "fetch_abuseipdb_blacklist", fake_fetch_abuseipdb)
-    monkeypatch.setattr(cli_module, "fetch_otx_feed", fake_fetch_otx)
+    monkeypatch.setattr(
+        fetch_module,
+        "fetch_abuseipdb_blacklist",
+        fake_fetch_abuseipdb,
+    )
+    monkeypatch.setattr(
+        fetch_module,
+        "fetch_otx_feed",
+        fake_fetch_otx,
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "fetch_abuseipdb_blacklist",
+        fake_fetch_abuseipdb,
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "fetch_otx_feed",
+        fake_fetch_otx,
+    )
 
     return fixed_ioc
 
@@ -92,9 +90,13 @@ def test_end_to_end(tmp_path, patch_fetch):
     fetch_module.CONFIG_PATH = cfg_dir / "config.yaml"
 
     # 4) Run 'fetch' to insert the fixed IOC into the temp DB
-    result = runner.invoke(cli, ["fetch"], env={"TC_DB_PATH": db_url, "ABUSEIPDB_API_KEY": "DUMMY_KEY"})
-    assert result.exit_code == 0
-    assert "Stored 1 new IOCs" in result.output
+    result = runner.invoke(
+        cli,
+        ["fetch"],
+        env={"TC_DB_PATH": db_url, "ABUSEIPDB_API_KEY": "DUMMY_KEY"},
+    )
+    assert result.exit_code == 0  # nosec
+    assert "Stored 1 new IOCs" in result.output  # nosec
 
     # 5) Create a small NDJSON log containing the IOC’s IP
     log_path = tmp_path / "sample_log.json"
@@ -104,29 +106,30 @@ def test_end_to_end(tmp_path, patch_fetch):
 
     # 6) Call correlate_logs() directly and verify results
     from threatcorrelator.storage import get_session
+
     session = get_session(db_url)
     results = correlate_logs(log_path, session=session)
-    assert isinstance(results, list)
-    assert len(results) == 1
+    assert isinstance(results, list)  # nosec
+    assert len(results) == 1  # nosec
 
     entry = results[0]
-    assert entry["indicator"] == patch_fetch["indicator"]
-    assert entry["confidence"] == patch_fetch["confidence"]
-    assert entry["country"] == patch_fetch["country"]
-    assert entry["usage"] == patch_fetch["usage"]
-    assert entry["severity"] == "High"  # because 95 >= 90
+    assert entry["indicator"] == patch_fetch["indicator"]  # nosec
+    assert entry["confidence"] == patch_fetch["confidence"]  # nosec
+    assert entry["country"] == patch_fetch["country"]  # nosec
+    assert entry["usage"] == patch_fetch["usage"]  # nosec
+    assert entry["severity"] == "High"  # nosec
 
     # Since usage "SSH" → T1110 in mitre_map
     from threatcorrelator.mitre_map import MITRE_MAPPING
 
     technique, _ = MITRE_MAPPING.get(patch_fetch["usage"], MITRE_MAPPING["__default__"])
-    assert entry["attack_technique_id"] == technique
+    assert entry["attack_technique_id"] == technique  # nosec
 
     # 7) Also test CLI 'correlate' command prints correct output
     cli_result = runner.invoke(cli, ["correlate", str(log_path)])
-    assert cli_result.exit_code == 0
-    assert "Matched 1 threats." in cli_result.output
-    assert "- 1 High" in cli_result.output
+    assert cli_result.exit_code == 0  # nosec
+    assert "Matched 1 threats." in cli_result.output  # nosec
+    assert "- 1 High" in cli_result.output  # nosec
 
     # Cleanup monkeypatch
     monkeypatch.undo()

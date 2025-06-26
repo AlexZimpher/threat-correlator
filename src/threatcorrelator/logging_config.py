@@ -1,6 +1,7 @@
 import logging
 import os
 
+# Set up logging format and default log level
 LOG_FORMAT = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 LOG_LEVEL = logging.INFO  # Default log level if not overridden
 
@@ -15,7 +16,7 @@ def setup_logging():
     level = os.getenv("LOG_LEVEL", LOG_LEVEL)
     logger.setLevel(level)
 
-    # Console handler
+    # Console handler for log output
     ch = logging.StreamHandler()
     ch.setLevel(level)
     ch_formatter = logging.Formatter(LOG_FORMAT)

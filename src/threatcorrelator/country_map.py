@@ -1,9 +1,7 @@
 # src/threatcorrelator/country_map.py
 
-"""
-ISO 3166-1 alpha-2 → full country name mapping.
-Extend this dictionary as needed.
-"""
+# Mapping of ISO 3166-1 alpha-2 country codes to full country names.
+# Extend this dictionary as needed for your use case.
 COUNTRY_MAP = {
     "US": "United States",
     "CN": "China",
@@ -13,4 +11,3 @@ COUNTRY_MAP = {
     "FR": "France",
     # Add more codes if required
 }
-

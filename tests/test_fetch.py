@@ -1,8 +1,10 @@
 from unittest.mock import patch
 from threatcorrelator.fetch import fetch_abuseipdb_blacklist
 
+
 @patch("threatcorrelator.fetch.requests.get")
 def test_fetch_abuseipdb_blacklist_parses_data(mock_get):
+    # Test that fetch_abuseipdb_blacklist parses API data into IOC dicts
     mock_response = {
         "data": [
             {
@@ -10,7 +12,7 @@ def test_fetch_abuseipdb_blacklist_parses_data(mock_get):
                 "abuseConfidenceScore": 90,
                 "countryCode": "US",
                 "lastReportedAt": "2024-12-01T12:00:00Z",
-                "usageType": "ISP"
+                "usageType": "ISP",
             }
         ]
     }
@@ -27,4 +29,3 @@ def test_fetch_abuseipdb_blacklist_parses_data(mock_get):
     assert iocs[0]["last_seen"] == "2024-12-01T12:00:00Z"
     assert iocs[0]["usage"] == "ISP"
     assert iocs[0]["source"] == "abuseipdb"
-

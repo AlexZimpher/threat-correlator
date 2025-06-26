@@ -1,0 +1,5 @@
+# Copy this file to config.local.yaml and fill in your real API keys
+abuseipdb:
+  api_key: "YOUR-LOCAL-ABUSEIPDB-KEY"
+otx:
+  api_key: "YOUR-LOCAL-OTX-KEY"

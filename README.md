@@ -1,4 +1,3 @@
-
 # ThreatCorrelator
 
 [![Build Status](https://github.com/AlexZimpher/threat-correlator/actions/workflows/ci.yml/badge.svg)](https://github.com/AlexZimpher/threat-correlator/actions/workflows/ci.yml)
@@ -44,6 +43,16 @@ This project was built to showcase my ability to design, implement, and document
 **Fetch Threat Feeds** → **Store in Local DB** → **Correlate with Your Logs** → **Enrich & Classify** → **Visualize & Export**
 
 ---
+
+## Secure Configuration & API Keys
+
+- **Never commit secrets:** All API keys and sensitive config must go in `config/config.local.yaml`, which is git-ignored by default.
+- **Template provided:** Use `config/config.local.yaml.example` as a starting point for your local config.
+- **Config merging:** The app loads `config/config.yaml` (base) and overlays `config/config.local.yaml` (secrets/overrides) securely at runtime.
+- **See** `src/threatcorrelator/config_loader.py` **for details.**
+
+---
+
 ## Dashboard Screenshots
 
 ![IOC Overview](Images/IOC_Overview.png)
@@ -64,8 +73,6 @@ This project was built to showcase my ability to design, implement, and document
 poetry install
 poetry run streamlit run src/threatcorrelator/dashboard.py
 ```
-
-*Sample logs and config are included for instant demo*
 
 ---
 

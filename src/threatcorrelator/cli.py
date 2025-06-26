@@ -1,42 +1,50 @@
 import sys
 import logging
 import click
-import yaml
-import csv
 from pathlib import Path
 from datetime import datetime
+import csv
+import yaml
 from threatcorrelator.logging_config import setup_logging
 from threatcorrelator.storage import get_session, IOC
-from threatcorrelator.fetch import fetch_abuseipdb_blacklist, fetch_otx_feed, fetch_static_malware_feed
+from threatcorrelator.fetch import (
+    fetch_abuseipdb_blacklist,
+    fetch_otx_feed,
+    fetch_static_malware_feed,
+)
 from threatcorrelator.correlate import correlate_logs
+from threatcorrelator.config_loader import load_config
 
+# Set up logging for the CLI
 setup_logging()
 logger = logging.getLogger(__name__)
-CONFIG_PATH = Path(__file__).resolve().parents[2] / "config" / "config.yaml"
+
 
 @click.group()
 def cli() -> None:
-    """Threat-Correlator CLI."""
+    """Main entry point for the Threat-Correlator CLI."""
     pass
+
 
 @cli.command()
 def greet() -> None:
-    """Say hello to confirm CLI works."""
+    """Print a message to confirm the CLI is working."""
     logger.info("greet command invoked")
-    click.echo("✅ Threat-Correlator CLI is working.")
+    click.echo("\u2705 Threat-Correlator CLI is working.")
+
 
 @cli.command()
 def show_config() -> None:
-    """Print contents of config.yaml."""
+    """Print the merged configuration from config.yaml and config.local.yaml."""
     try:
-        with open(CONFIG_PATH, "r") as f:
-            config = yaml.safe_load(f)
-        logger.info("Loaded config.yaml successfully")
-        click.echo(config)
-    except Exception as e:
-        logger.exception("Error loading config.yaml")
-        click.echo(f"❌ Failed to load config: {e}")
+        config = load_config()
+        logger.info("Loaded config successfully")
+        click.echo(yaml.dump(config, sort_keys=False))
+    except Exception as exc:
+        logger.exception("Error loading config")
+        click.echo(f"❌ Failed to load config: {exc}")
         sys.exit(1)
+
 
 @cli.command()
 @click.option(
@@ -48,29 +56,29 @@ def show_config() -> None:
     help="Which IOC source to fetch: abuseipdb, otx, static, or both",
 )
 def fetch(source: str) -> None:
-    """Fetch IOCs from AbuseIPDB, OTX, static feed, and store them."""
+    """Fetch IOCs from selected sources and store them."""
     all_iocs = []
     if source in ("abuseipdb", "both"):
         try:
             abuse_iocs = fetch_abuseipdb_blacklist()
             all_iocs.extend(abuse_iocs)
-            logger.info(f"Fetched {len(abuse_iocs)} IOCs from AbuseIPDB")
-        except Exception as e:
-            logger.error("Error fetching from AbuseIPDB: %s", e)
+            logger.info("Fetched %d IOCs from AbuseIPDB", len(abuse_iocs))
+        except Exception as exc:
+            logger.error("Error fetching from AbuseIPDB: %s", exc)
     if source in ("otx", "both"):
         try:
             otx_iocs = fetch_otx_feed()
             all_iocs.extend(otx_iocs)
-            logger.info(f"Fetched {len(otx_iocs)} IOCs from OTX")
-        except Exception as e:
-            logger.error("Error fetching from OTX: %s", e)
+            logger.info("Fetched %d IOCs from OTX", len(otx_iocs))
+        except Exception as exc:
+            logger.error("Error fetching from OTX: %s", exc)
     if source in ("static", "both"):
         try:
             static_iocs = fetch_static_malware_feed()
             all_iocs.extend(static_iocs)
-            logger.info(f"Fetched {len(static_iocs)} IOCs from static malware feed")
-        except Exception as e:
-            logger.error("Error fetching from static malware feed: %s", e)
+            logger.info("Fetched %d IOCs from static malware feed", len(static_iocs))
+        except Exception as exc:
+            logger.error("Error fetching from static malware feed: %s", exc)
     if not all_iocs:
         logger.warning("No IOCs fetched from any source.")
         click.echo("❌ No IOCs retrieved.")
@@ -86,10 +94,20 @@ def fetch(source: str) -> None:
         if existing:
             continue
         try:
-            allowed_fields = {"indicator", "confidence", "country", "last_seen", "usage", "source", "type"}
+            allowed_fields = {
+                "indicator",
+                "confidence",
+                "country",
+                "last_seen",
+                "usage",
+                "source",
+                "type",
+            }
             ioc_data = {k: v for k, v in ioc.items() if k in allowed_fields}
             if ioc_data.get("last_seen"):
-                ioc_data["last_seen"] = datetime.fromisoformat(ioc_data["last_seen"].replace("Z", "+00:00"))
+                ioc_data["last_seen"] = datetime.fromisoformat(
+                    ioc_data["last_seen"].replace("Z", "+00:00")
+                )
             obj = IOC(
                 indicator=ioc_data.get("indicator"),
                 confidence=ioc_data.get("confidence", 0),
@@ -103,8 +121,8 @@ def fetch(source: str) -> None:
             added += 1
             source_val = ioc_data.get("source", "unknown")
             source_counts[source_val] = source_counts.get(source_val, 0) + 1
-        except Exception as e:
-            logger.warning("Error processing IOC %s: %s", indicator, e)
+        except Exception as exc:
+            logger.warning("Error processing IOC %s: %s", indicator, exc)
             continue
     try:
         session.commit()
@@ -112,30 +130,32 @@ def fetch(source: str) -> None:
         click.echo(f"✅ Stored {added} new IOCs in database.")
         for src, count in source_counts.items():
             click.echo(f"- {src}: {count}")
-    except Exception as e:
+    except Exception as exc:
         logger.exception("Commit failed")
-        click.echo("❌ Failed to commit IOCs to database.")
+        click.echo(f"❌ Failed to commit IOCs to database: {exc}")
+
 
 @cli.command()
 def count() -> None:
-    """Count number of IOCs in database."""
+    """Count and display the number of IOCs in the database."""
     try:
         session = get_session()
         total = session.query(IOC).count()
         click.echo(f"📦 {total} IOCs stored in the database.")
-    except Exception as e:
+    except Exception as exc:
         logger.exception("Database count failed")
-        click.echo(f"❌ Count failed: {e}")
+        click.echo(f"❌ Count failed: {exc}")
         sys.exit(1)
+
 
 @cli.command()
 @click.argument("logfile", type=click.Path(exists=True))
 def correlate(logfile):
-    """Correlate a JSON log file against stored IOCs."""
+    """Correlate a JSON log file against stored IOCs and display matches."""
     logfile_path = Path(logfile)
     try:
-        # Use the same DB as fetch by respecting TC_DB_PATH
         import os
+
         db_url = os.getenv("TC_DB_PATH")
         session = get_session(db_url) if db_url else get_session()
         results = correlate_logs(logfile_path, session=session)
@@ -147,10 +167,11 @@ def correlate(logfile):
                 severity_counts[sev] += 1
         for level, cnt in severity_counts.items():
             click.echo(f"- {cnt} {level}")
-    except Exception as e:
+    except Exception as exc:
         logger.exception("Correlation error")
-        click.echo(f"❌ Correlation failed: {e}")
+        click.echo(f"❌ Correlation failed: {exc}")
         sys.exit(1)
+
 
 @cli.command()
 @click.argument("logfile", type=click.Path(exists=True))
@@ -169,13 +190,13 @@ def correlate(logfile):
     help="Only export IOCs with confidence ≥ this value",
 )
 def export(logfile, output, min_confidence):
-    """Scan a log file and export matched IOCs to CSV."""
+    """Scan a log file and export matched IOCs to a CSV file."""
     logfile_path = Path(logfile)
     try:
         results = correlate_logs(logfile_path)
-    except Exception as e:
+    except Exception as exc:
         logger.exception("Error during correlation in export")
-        click.echo(f"❌ Export failed: {e}")
+        click.echo(f"❌ Export failed: {exc}")
         sys.exit(1)
     filtered = [r for r in results if r.get("confidence", 0) >= min_confidence]
     if not filtered:
@@ -186,29 +207,41 @@ def export(logfile, output, min_confidence):
     try:
         with open(output_path, "w", newline="") as f:
             writer = csv.writer(f)
-            # Update CSV export columns
-            writer.writerow([
-                "indicator", "confidence", "country", "country_name",
-                "last_seen", "usage", "source", "type", "severity", "attack_technique_id"
-            ])
+            writer.writerow(
+                [
+                    "indicator",
+                    "confidence",
+                    "country",
+                    "country_name",
+                    "last_seen",
+                    "usage",
+                    "source",
+                    "type",
+                    "severity",
+                    "attack_technique_id",
+                ]
+            )
             for r in filtered:
-                writer.writerow([
-                    r.get("indicator", ""),
-                    r.get("confidence", ""),
-                    r.get("country", ""),
-                    r.get("country_name", ""),
-                    r.get("last_seen", ""),
-                    r.get("usage", ""),
-                    r.get("source", ""),
-                    r.get("type", ""),
-                    r.get("severity", ""),
-                    r.get("attack_technique_id", ""),
-                ])
+                writer.writerow(
+                    [
+                        r.get("indicator", ""),
+                        r.get("confidence", ""),
+                        r.get("country", ""),
+                        r.get("country_name", ""),
+                        r.get("last_seen", ""),
+                        r.get("usage", ""),
+                        r.get("source", ""),
+                        r.get("type", ""),
+                        r.get("severity", ""),
+                        r.get("attack_technique_id", ""),
+                    ]
+                )
         click.echo(f"✅ Exported {len(filtered)} threats to {output}")
-    except Exception as e:
+    except Exception as exc:
         logger.exception("Export failed")
-        click.echo(f"❌ Export failed: {e}")
+        click.echo(f"❌ Export failed: {exc}")
         sys.exit(1)
+
 
 main = cli
 

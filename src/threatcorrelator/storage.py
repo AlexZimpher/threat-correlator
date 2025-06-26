@@ -1,7 +1,7 @@
 import os
 
 # Database storage and ORM model for ThreatCorrelator.
-# Secure, robust, and clearly commented for maintainability.
+# Provides functions to connect to the database and define the IOC model.
 
 
 from sqlalchemy import create_engine, Column, String, Integer, DateTime
@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 Base = declarative_base()
 
+
 def get_engine() -> Engine:
     """
     Create a SQLAlchemy engine for the IOC database.
@@ -19,6 +20,7 @@ def get_engine() -> Engine:
     """
     db_path = os.getenv("TC_DB_PATH", "sqlite:///sampledata/iocs.db")
     return create_engine(db_path, echo=False)
+
 
 def get_session(db_url: str | None = None) -> Session:
     """
@@ -30,23 +32,25 @@ def get_session(db_url: str | None = None) -> Session:
     Session = sessionmaker(bind=engine)
     return Session()
 
+
 class IOC(Base):
     """
     ORM model for a threat intelligence indicator (IP, domain, URL, hash, etc.).
     Fields:
         indicator (str): The IOC value (IP, domain, etc.)
+        type (str): The type of indicator (ip, domain, etc.)
         confidence (int): Confidence score
         country (str): Country code
         last_seen (datetime): Last seen timestamp
-        usage (str): Usage type or context
+        usage (str): Usage or context
         source (str): Source of the IOC
-        type (str): IOC type (e.g. IPv4, domain, URL, hash)
     """
-    __tablename__ = "ioc_blacklist"
-    indicator = Column(String, primary_key=True)  # IP, domain, etc.
-    confidence = Column(Integer, nullable=True)
-    country = Column(String, nullable=True)
-    last_seen = Column(DateTime, nullable=True)
-    usage = Column(String, nullable=True)
-    source = Column(String, nullable=True)
-    type = Column(String, nullable=True)  # e.g. IPv4, domain, URL, hash
+
+    __tablename__ = "iocs"
+    indicator = Column(String, primary_key=True)
+    type = Column(String)
+    confidence = Column(Integer)
+    country = Column(String)
+    last_seen = Column(DateTime)
+    usage = Column(String)
+    source = Column(String)
